@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activity & Emotion Logger - Options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Activity & Emotion Logger</h1>
+      <p class="subtitle">Configure your logging preferences</p>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>Notification Settings</h2>
+        
+        <div class="form-group">
+          <label for="frequency">Reminder Frequency</label>
+          <div class="frequency-selector">
+            <button class="frequency-btn" data-minutes="15">15 min</button>
+            <button class="frequency-btn" data-minutes="30">30 min</button>
+            <button class="frequency-btn" data-minutes="45">45 min</button>
+            <button class="frequency-btn" data-minutes="60">1 hour</button>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="toggle-label">
+            <span>Enable Notifications</span>
+            <div class="toggle">
+              <input type="checkbox" id="notificationsToggle">
+              <span class="toggle-slider"></span>
+            </div>
+          </label>
+          <p class="form-help">When enabled, you'll receive periodic reminders to log your activity.</p>
+        </div>
+      </section>
+      
+      <section class="card">
+        <h2>Data Management</h2>
+        <button id="exportBtn" class="primary-btn">Export All Data (CSV)</button>
+        <button id="clearDataBtn" class="danger-btn">Clear All Data</button>
+        <p class="form-help warning">Warning: Clearing data cannot be undone!</p>
+      </section>
+    </main>
+    
+    <footer>
+      <p>Activity & Emotion Logger v1.0</p>
+    </footer>
+  </div>
+
+  <div id="overlay" class="hidden">
+    <div class="modal">
+      <h2>Confirm Data Deletion</h2>
+      <p>Are you sure you want to delete all of your logged activities? This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button id="cancelDeleteBtn" class="secondary-btn">Cancel</button>
+        <button id="confirmDeleteBtn" class="danger-btn">Delete All Data</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

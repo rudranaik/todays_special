@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activity & Emotion Logger</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Header Section -->
+    <header>
+      <h1>Activity & Emotion Logger</h1>
+      <div class="tabs">
+        <button id="logTab" class="tab-btn active">Log</button>
+        <button id="historyTab" class="tab-btn">History</button>
+        <button id="settingsTab" class="tab-btn">Settings</button>
+      </div>
+    </header>
+
+    <!-- Log Entry Section -->
+    <section id="logSection" class="section active">
+      <h2>What are you doing?</h2>
+      <div class="form-group">
+        <textarea id="activityInput" placeholder="Enter what you're currently working on..."></textarea>
+      </div>
+      
+      <h2>How are you feeling?</h2>
+      <div class="emotion-selector">
+        <div class="emotion-option" data-emotion="1">
+          <div class="emotion-icon frustrated"></div>
+          <span>Frustrated</span>
+        </div>
+        <div class="emotion-option" data-emotion="2">
+          <div class="emotion-icon sad"></div>
+          <span>Sad</span>
+        </div>
+        <div class="emotion-option" data-emotion="3">
+          <div class="emotion-icon neutral"></div>
+          <span>Neutral</span>
+        </div>
+        <div class="emotion-option" data-emotion="4">
+          <div class="emotion-icon enjoying"></div>
+          <span>Enjoying</span>
+        </div>
+        <div class="emotion-option" data-emotion="5">
+          <div class="emotion-icon thrilled"></div>
+          <span>Thrilled</span>
+        </div>
+      </div>
+      
+      <button id="saveLogBtn" class="primary-btn">Save Log</button>
+      
+      <div id="logSuccess" class="success-message hidden">
+        <p>Entry logged successfully!</p>
+      </div>
+    </section>
+
+    <!-- History Section -->
+    <section id="historySection" class="section">
+      <div class="history-header">
+        <h2>Activity History</h2>
+        <button id="exportBtn" class="secondary-btn">Export CSV</button>
+      </div>
+      
+      <div id="logEntries" class="log-entries">
+        <div class="empty-state hidden">
+          <p>No entries yet. Start logging your activities!</p>
+        </div>
+        <!-- Log entries will be inserted here by JavaScript -->
+      </div>
+    </section>
+
+    <!-- Settings Section -->
+    <section id="settingsSection" class="section">
+      <h2>Notification Settings</h2>
+      
+      <div class="form-group">
+        <label>Reminder Frequency</label>
+        <div class="frequency-selector">
+          <button class="frequency-btn" data-minutes="15">15 min</button>
+          <button class="frequency-btn" data-minutes="30">30 min</button>
+          <button class="frequency-btn" data-minutes="45">45 min</button>
+          <button class="frequency-btn" data-minutes="60">1 hour</button>
+        </div>
+      </div>
+      
+      <div class="settings-info">
+        <p>You'll receive a notification reminder based on your frequency setting.</p>
+      </div>
+    </section>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>
