@@ -1,10 +1,10 @@
 // Constants for emotion options
-const EMOTIONS = {
-  1: { text: "Frustrated to the extent that I'm considering quitting", color: "#e74c3c", shortText: "Frustrated" },
-  2: { text: "Sad for needing to do it", color: "#9b59b6", shortText: "Sad" },
-  3: { text: "Neutral", color: "#3498db", shortText: "Neutral" },
-  4: { text: "Enjoying", color: "#2ecc71", shortText: "Enjoying" },
-  5: { text: "Super thrilled", color: "#27ae60", shortText: "Thrilled" }
+let EMOTIONS = {
+  1: { text: "Frustrated to the extent that I'm considering quitting", color: "#e74c3c", name: "Frustrated" },
+  2: { text: "Sad for needing to do it", color: "#9b59b6", name: "Sad" },
+  3: { text: "Neutral", color: "#3498db", name: "Neutral" },
+  4: { text: "Enjoying", color: "#2ecc71", name: "Enjoying" },
+  5: { text: "Super thrilled", color: "#27ae60", name: "Thrilled" }
 };
 
 // DOM Elements
@@ -17,22 +17,24 @@ const logSuccess = document.getElementById('logSuccess');
 const logEntries = document.getElementById('logEntries');
 const exportBtn = document.getElementById('exportBtn');
 const frequencyButtons = document.querySelectorAll('.frequency-btn');
+const settingsAlert = document.getElementById('settingsAlert');
+const notificationWarning = document.getElementById('notificationWarning');
+const enableNotificationsBtn = document.getElementById('enableNotificationsBtn');
+const nextPromptTime = document.getElementById('nextPromptTime');
+const emotionNameInputs = document.querySelectorAll('.emotion-name-field');
+const saveEmotionNames = document.getElementById('saveEmotionNames');
 
 // Tab Navigation
 tabButtons.forEach(button => {
   button.addEventListener('click', () => {
-    // Remove active class from all tabs
     tabButtons.forEach(btn => btn.classList.remove('active'));
     sections.forEach(section => section.classList.remove('active'));
     
-    // Add active class to clicked tab
     button.classList.add('active');
     
-    // Show corresponding section
     const targetId = button.id.replace('Tab', 'Section');
     document.getElementById(targetId).classList.add('active');
     
-    // Load data if navigating to history tab
     if (button.id === 'historyTab') {
       loadLogEntries();
     } else if (button.id === 'settingsTab') {
@@ -46,13 +48,8 @@ let selectedEmotion = null;
 
 emotionOptions.forEach(option => {
   option.addEventListener('click', () => {
-    // Remove selected class from all options
     emotionOptions.forEach(opt => opt.classList.remove('selected'));
-    
-    // Add selected class to clicked option
     option.classList.add('selected');
-    
-    // Track selected emotion
     selectedEmotion = option.dataset.emotion;
   });
 });
@@ -81,15 +78,11 @@ saveLogBtn.addEventListener('click', async () => {
     });
     
     if (response.success) {
-      // Show success message
       logSuccess.classList.remove('hidden');
-      
-      // Reset form
       activityInput.value = '';
       emotionOptions.forEach(opt => opt.classList.remove('selected'));
       selectedEmotion = null;
       
-      // Hide success message after 3 seconds
       setTimeout(() => {
         logSuccess.classList.add('hidden');
       }, 3000);
@@ -106,7 +99,6 @@ async function loadLogEntries() {
     const response = await chrome.runtime.sendMessage({ type: 'getLogs' });
     const logs = response.logs || [];
     
-    // Clear existing entries
     logEntries.innerHTML = '';
     
     if (logs.length === 0) {
@@ -117,20 +109,51 @@ async function loadLogEntries() {
       return;
     }
     
-    // Create entry for each log
+    // Group logs by date
+    const groupedLogs = {};
     logs.forEach(log => {
-      const entry = document.createElement('div');
-      entry.className = 'log-entry';
+      if (!groupedLogs[log.date]) {
+        groupedLogs[log.date] = [];
+      }
+      groupedLogs[log.date].push(log);
+    });
+    
+    // Create date groups
+    Object.entries(groupedLogs).forEach(([date, entries]) => {
+      const dateGroup = document.createElement('div');
+      dateGroup.className = 'date-group';
       
-      entry.innerHTML = `
-        <div class="log-entry-header">
-          <span class="log-entry-timestamp">${log.formattedDate}</span>
-          <span class="log-entry-emotion" data-emotion="${log.emotion}">${EMOTIONS[log.emotion].shortText}</span>
-        </div>
-        <div class="log-entry-activity">${log.activity}</div>
+      const dateHeader = document.createElement('div');
+      dateHeader.className = 'date-header';
+      dateHeader.innerHTML = `
+        <span class="date-toggle">▼</span>
+        <span>${date}</span>
       `;
       
-      logEntries.appendChild(entry);
+      const dateEntries = document.createElement('div');
+      dateEntries.className = 'date-entries';
+      
+      entries.forEach(log => {
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = `
+          <div class="log-entry-header">
+            <span class="log-entry-timestamp">${new Date(log.timestamp).toLocaleTimeString()}</span>
+            <span class="log-entry-emotion" style="background-color: ${EMOTIONS[log.emotion].color}">${EMOTIONS[log.emotion].name}</span>
+          </div>
+          <div class="log-entry-activity">${log.activity}</div>
+        `;
+        dateEntries.appendChild(entry);
+      });
+      
+      dateHeader.addEventListener('click', () => {
+        dateHeader.querySelector('.date-toggle').classList.toggle('collapsed');
+        dateEntries.style.display = dateEntries.style.display === 'none' ? 'block' : 'none';
+      });
+      
+      dateGroup.appendChild(dateHeader);
+      dateGroup.appendChild(dateEntries);
+      logEntries.appendChild(dateGroup);
     });
   } catch (error) {
     console.error('Error loading log entries:', error);
@@ -148,11 +171,11 @@ exportBtn.addEventListener('click', async () => {
       return;
     }
     
-    // Create CSV content
-    const headers = ['Date', 'Activity', 'Emotion'];
+    const headers = ['Date', 'Time', 'Activity', 'Emotion'];
     const rows = logs.map(log => [
-      log.formattedDate,
-      `"${log.activity.replace(/"/g, '""')}"`, // Escape quotes in CSV
+      new Date(log.timestamp).toLocaleDateString(),
+      new Date(log.timestamp).toLocaleTimeString(),
+      `"${log.activity.replace(/"/g, '""')}"`,
       EMOTIONS[log.emotion].text
     ]);
     
@@ -161,7 +184,6 @@ exportBtn.addEventListener('click', async () => {
       ...rows.map(row => row.join(','))
     ].join('\n');
     
-    // Create blob and download link
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -169,7 +191,6 @@ exportBtn.addEventListener('click', async () => {
     a.download = `activity-log-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     
-    // Clean up
     setTimeout(() => URL.revokeObjectURL(url), 100);
   } catch (error) {
     console.error('Error exporting logs:', error);
@@ -183,11 +204,32 @@ async function loadSettings() {
     const response = await chrome.runtime.sendMessage({ type: 'getSettings' });
     const settings = response.settings;
     
-    // Update UI to reflect current settings
+    // Update frequency buttons
     frequencyButtons.forEach(button => {
       const minutes = parseInt(button.dataset.minutes);
       button.classList.toggle('active', minutes === settings.frequency);
     });
+    
+    // Update emotion name inputs
+    Object.entries(settings.emotions).forEach(([id, emotion]) => {
+      const input = document.querySelector(`#emotion${id}`);
+      if (input) {
+        input.value = emotion.name;
+      }
+    });
+    
+    // Check notification permission
+    const permission = await chrome.permissions.contains({
+      permissions: ['notifications']
+    });
+    
+    notificationWarning.classList.toggle('hidden', permission);
+    settingsAlert.classList.toggle('hidden', permission);
+    
+    // Update next prompt time
+    updateNextPromptTime(settings.nextPromptTime);
+    
+    EMOTIONS = settings.emotions;
   } catch (error) {
     console.error('Error loading settings:', error);
   }
@@ -196,27 +238,16 @@ async function loadSettings() {
 // Update frequency setting
 frequencyButtons.forEach(button => {
   button.addEventListener('click', async () => {
-    // Remove active class from all buttons
     frequencyButtons.forEach(btn => btn.classList.remove('active'));
-    
-    // Add active class to clicked button
     button.classList.add('active');
     
-    // Get selected frequency
     const frequency = parseInt(button.dataset.minutes);
     
     try {
-      // Get current settings
       const response = await chrome.runtime.sendMessage({ type: 'getSettings' });
       const settings = response.settings;
-      
-      // Update frequency
       settings.frequency = frequency;
-      
-      // Save updated settings
       await chrome.storage.local.set({ settings });
-      
-      // Notify background script
       await chrome.runtime.sendMessage({ type: 'settingsUpdated' });
     } catch (error) {
       console.error('Error updating settings:', error);
@@ -225,8 +256,73 @@ frequencyButtons.forEach(button => {
   });
 });
 
+// Enable notifications
+enableNotificationsBtn.addEventListener('click', async () => {
+  try {
+    const granted = await chrome.permissions.request({
+      permissions: ['notifications']
+    });
+    
+    if (granted) {
+      notificationWarning.classList.add('hidden');
+      settingsAlert.classList.add('hidden');
+    }
+  } catch (error) {
+    console.error('Error requesting notification permission:', error);
+  }
+});
+
+// Update next prompt time display
+function updateNextPromptTime(nextPromptTime) {
+  if (!nextPromptTime) return;
+  
+  const next = new Date(nextPromptTime);
+  const now = new Date();
+  const diff = Math.max(0, Math.floor((next - now) / 1000 / 60));
+  
+  const hours = Math.floor(diff / 60);
+  const minutes = diff % 60;
+  
+  nextPromptTime.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+}
+
+// Save emotion names
+saveEmotionNames.addEventListener('click', async () => {
+  const updatedEmotions = { ...EMOTIONS };
+  
+  emotionNameInputs.forEach(input => {
+    const id = input.dataset.emotion;
+    if (id && input.value.trim()) {
+      updatedEmotions[id].name = input.value.trim();
+    }
+  });
+  
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: 'updateEmotions',
+      data: updatedEmotions
+    });
+    
+    if (response.success) {
+      EMOTIONS = updatedEmotions;
+      alert('Emotion names updated successfully!');
+    }
+  } catch (error) {
+    console.error('Error updating emotion names:', error);
+    alert('Error updating emotion names. Please try again.');
+  }
+});
+
+// Update next prompt time every minute
+setInterval(() => {
+  chrome.runtime.sendMessage({ type: 'getSettings' }, (response) => {
+    if (response.settings?.nextPromptTime) {
+      updateNextPromptTime(response.settings.nextPromptTime);
+    }
+  });
+}, 60000);
+
 // Initial load
 document.addEventListener('DOMContentLoaded', () => {
-  // Default to log tab
   document.getElementById('logTab').click();
 });

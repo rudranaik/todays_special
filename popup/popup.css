@@ -82,6 +82,7 @@ h2 {
   display: flex;
   gap: 8px;
   margin-bottom: 8px;
+  position: relative;
 }
 
 .tab-btn {
@@ -93,6 +94,7 @@ h2 {
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .tab-btn:hover {
@@ -104,6 +106,28 @@ h2 {
   background-color: var(--primary-light);
   color: var(--primary);
   font-weight: 500;
+}
+
+.tab-alert {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background-color: var(--warning);
+  color: white;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.next-prompt {
+  font-size: 12px;
+  color: var(--neutral-600);
+  margin-top: 8px;
 }
 
 .section {
@@ -200,13 +224,13 @@ textarea:focus {
   background-color: var(--emotion-thrilled);
 }
 
-.emotion-option span {
+.emotion-name {
   font-size: 12px;
   text-align: center;
   color: var(--neutral-700);
 }
 
-.primary-btn, .secondary-btn {
+.primary-btn, .secondary-btn, .warning-btn {
   padding: 10px 16px;
   border-radius: var(--radius);
   font-size: 14px;
@@ -214,12 +238,13 @@ textarea:focus {
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
+  width: 100%;
+  margin-bottom: 8px;
 }
 
 .primary-btn {
   background-color: var(--primary);
   color: white;
-  width: 100%;
 }
 
 .primary-btn:hover {
@@ -236,6 +261,15 @@ textarea:focus {
   color: var(--neutral-800);
 }
 
+.warning-btn {
+  background-color: var(--warning);
+  color: white;
+}
+
+.warning-btn:hover {
+  background-color: #d97706;
+}
+
 .success-message {
   margin-top: 16px;
   padding: 12px;
@@ -245,9 +279,13 @@ textarea:focus {
   animation: fadeIn 0.3s ease-in-out;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+.warning-message {
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #fef3c7;
+  color: #92400e;
+  border-radius: var(--radius);
+  animation: fadeIn 0.3s ease-in-out;
 }
 
 .hidden {
@@ -268,12 +306,44 @@ textarea:focus {
   gap: 12px;
 }
 
+.date-group {
+  margin-bottom: 16px;
+}
+
+.date-header {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  background-color: var(--neutral-100);
+  border-radius: var(--radius);
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.date-header:hover {
+  background-color: var(--neutral-200);
+}
+
+.date-toggle {
+  margin-right: 8px;
+  transition: transform 0.2s ease;
+}
+
+.date-toggle.collapsed {
+  transform: rotate(-90deg);
+}
+
+.date-entries {
+  padding-left: 16px;
+}
+
 .log-entry {
   background-color: white;
   border-radius: var(--radius);
   padding: 16px;
   box-shadow: var(--shadow);
   animation: fadeIn 0.3s ease;
+  margin-bottom: 8px;
 }
 
 .log-entry-header {
@@ -293,30 +363,6 @@ textarea:focus {
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
-}
-
-.log-entry-emotion[data-emotion="1"] {
-  background-color: var(--emotion-frustrated);
-  color: white;
-}
-
-.log-entry-emotion[data-emotion="2"] {
-  background-color: var(--emotion-sad);
-  color: white;
-}
-
-.log-entry-emotion[data-emotion="3"] {
-  background-color: var(--emotion-neutral);
-  color: white;
-}
-
-.log-entry-emotion[data-emotion="4"] {
-  background-color: var(--emotion-enjoying);
-  color: white;
-}
-
-.log-entry-emotion[data-emotion="5"] {
-  background-color: var(--emotion-thrilled);
   color: white;
 }
 
@@ -363,18 +409,32 @@ textarea:focus {
   font-weight: 500;
 }
 
-.settings-info {
-  background-color: var(--neutral-100);
-  border-radius: var(--radius);
-  padding: 12px;
-  margin-top: 16px;
-  font-size: 14px;
-  color: var(--neutral-600);
+.emotion-names {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--neutral-700);
+.emotion-name-input {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.emotion-name-field {
+  padding: 8px;
+  border: 1px solid var(--neutral-300);
+  border-radius: var(--radius);
+  font-size: 14px;
+}
+
+.emotion-name-field:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }

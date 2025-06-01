@@ -8,17 +8,19 @@
 </head>
 <body>
   <div class="app">
-    <!-- Header Section -->
     <header>
       <h1>Activity & Emotion Logger</h1>
       <div class="tabs">
         <button id="logTab" class="tab-btn active">Log</button>
         <button id="historyTab" class="tab-btn">History</button>
         <button id="settingsTab" class="tab-btn">Settings</button>
+        <div id="settingsAlert" class="tab-alert hidden">!</div>
+      </div>
+      <div id="nextPrompt" class="next-prompt">
+        Next prompt in: <span id="nextPromptTime">--:--</span>
       </div>
     </header>
 
-    <!-- Log Entry Section -->
     <section id="logSection" class="section active">
       <h2>What are you doing?</h2>
       <div class="form-group">
@@ -29,23 +31,23 @@
       <div class="emotion-selector">
         <div class="emotion-option" data-emotion="1">
           <div class="emotion-icon frustrated"></div>
-          <span>Frustrated</span>
+          <span class="emotion-name">Frustrated</span>
         </div>
         <div class="emotion-option" data-emotion="2">
           <div class="emotion-icon sad"></div>
-          <span>Sad</span>
+          <span class="emotion-name">Sad</span>
         </div>
         <div class="emotion-option" data-emotion="3">
           <div class="emotion-icon neutral"></div>
-          <span>Neutral</span>
+          <span class="emotion-name">Neutral</span>
         </div>
         <div class="emotion-option" data-emotion="4">
           <div class="emotion-icon enjoying"></div>
-          <span>Enjoying</span>
+          <span class="emotion-name">Enjoying</span>
         </div>
         <div class="emotion-option" data-emotion="5">
           <div class="emotion-icon thrilled"></div>
-          <span>Thrilled</span>
+          <span class="emotion-name">Thrilled</span>
         </div>
       </div>
       
@@ -56,7 +58,6 @@
       </div>
     </section>
 
-    <!-- History Section -->
     <section id="historySection" class="section">
       <div class="history-header">
         <h2>Activity History</h2>
@@ -67,14 +68,16 @@
         <div class="empty-state hidden">
           <p>No entries yet. Start logging your activities!</p>
         </div>
-        <!-- Log entries will be inserted here by JavaScript -->
       </div>
     </section>
 
-    <!-- Settings Section -->
     <section id="settingsSection" class="section">
+      <div id="notificationWarning" class="warning-message hidden">
+        <p>⚠️ Notifications are not enabled. Enable them to receive activity logging reminders.</p>
+        <button id="enableNotificationsBtn" class="warning-btn">Enable Notifications</button>
+      </div>
+
       <h2>Notification Settings</h2>
-      
       <div class="form-group">
         <label>Reminder Frequency</label>
         <div class="frequency-selector">
@@ -84,9 +87,30 @@
           <button class="frequency-btn" data-minutes="60">1 hour</button>
         </div>
       </div>
-      
-      <div class="settings-info">
-        <p>You'll receive a notification reminder based on your frequency setting.</p>
+
+      <h2>Customize Emotion Names</h2>
+      <div class="emotion-names">
+        <div class="emotion-name-input">
+          <label for="emotion1">Emotion 1 (Frustrated)</label>
+          <input type="text" id="emotion1" class="emotion-name-field" data-emotion="1">
+        </div>
+        <div class="emotion-name-input">
+          <label for="emotion2">Emotion 2 (Sad)</label>
+          <input type="text" id="emotion2" class="emotion-name-field" data-emotion="2">
+        </div>
+        <div class="emotion-name-input">
+          <label for="emotion3">Emotion 3 (Neutral)</label>
+          <input type="text" id="emotion3" class="emotion-name-field" data-emotion="3">
+        </div>
+        <div class="emotion-name-input">
+          <label for="emotion4">Emotion 4 (Enjoying)</label>
+          <input type="text" id="emotion4" class="emotion-name-field" data-emotion="4">
+        </div>
+        <div class="emotion-name-input">
+          <label for="emotion5">Emotion 5 (Thrilled)</label>
+          <input type="text" id="emotion5" class="emotion-name-field" data-emotion="5">
+        </div>
+        <button id="saveEmotionNames" class="primary-btn">Save Emotion Names</button>
       </div>
     </section>
   </div>
