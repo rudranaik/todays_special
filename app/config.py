@@ -2,6 +2,10 @@ from __future__ import annotations
 from pydantic_settings import BaseSettings
 from pydantic import Field
 from typing import Optional, List
+from dotenv import load_dotenv
+import os
+load_dotenv()  # populates os.environ from .env
+print("OPENAI_API_KEY from env:", os.getenv("OPENAI_API_KEY"))
 
 class Settings(BaseSettings):
     # LLM
@@ -13,6 +17,9 @@ class Settings(BaseSettings):
     asr_model: str = Field("tiny", env="ASR_MODEL")
     asr_compute_type: str = Field("int8", env="ASR_COMPUTE_TYPE")
     asr_beam_size: int = Field(1, env="ASR_BEAM_SIZE")
+
+    # Toggle for using OpenAI vs local parser
+    itemsnap_use_openai: bool = Field(True, env="ITEMSNAP_USE_OPENAI")
 
     # Storage
     data_dir: str = Field("data", env="DATA_DIR")

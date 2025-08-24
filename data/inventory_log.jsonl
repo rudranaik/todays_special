@@ -1,0 +1,3 @@
+{"ts":"2025-08-24 12:50:02.645961","type":"update","payload":{"mode":"merge","delta":[{"name":"Tomatoes","quantity":4.0,"unit":"piece","confidence":null,"notes":null},{"name":"Rice","quantity":2.0,"unit":"cup","confidence":null,"notes":null}]},"schema_version":1}
+{"ts":"2025-08-24 12:51:05.490065","type":"update","payload":{"mode":"replace","items":[{"name":"Onion","quantity":2.0,"unit":"piece","confidence":null,"notes":null}]},"schema_version":1}
+{"ts":"2025-08-24 12:52:18.743639","type":"suggest","payload":{"constraints":{"time_minutes":30,"mood":"light","diet_conditions":["vegetarian"],"protein_goal_g":25.0,"servings":2},"recipe_count":3},"schema_version":1}

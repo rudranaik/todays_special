@@ -54,7 +54,7 @@ class OpenAIItemExtractor(ItemExtractor):
                 model=self._model,
                 messages=[{"role": "system", "content": "You extract shopping items as strict JSON."},
                           {"role": "user", "content": prompt}],
-                temperature=0,
+                # temperature=0,
             )
             content = resp.choices[0].message.content or "[]"
             data = json.loads(content)
@@ -103,7 +103,7 @@ class OpenAIRecipeSuggester(RecipeSuggester):
                 model=self._model,
                 messages=[{"role": "system", "content": "You are a precise recipe generator returning strict JSON."},
                           {"role": "user", "content": prompt}],
-                temperature=0.2,
+                # temperature=0.2,
             )
             content = resp.choices[0].message.content or "{\"recipes\":[]}"
             data = json.loads(content)

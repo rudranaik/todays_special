@@ -10,6 +10,7 @@ from typing import Iterator
 from app.core.models import Pantry, Item, InventoryEvent
 from app.services.exceptions import RepoError
 from app.config import Settings
+from datetime import datetime
 
 # Cross-platform file lock (fcntl for *nix; msvcrt for Windows)
 @contextmanager
@@ -95,7 +96,7 @@ class JSONEventRepo:
 
     def append(self, event: InventoryEvent) -> None:
         try:
-            line = (json.dumps(event.dict(), ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
+            line = (json.dumps(event.dict(), ensure_ascii=False, separators=(",", ":"),default=str) + "\n").encode("utf-8")
             with _locked(self.path) as f:
                 f.seek(0, os.SEEK_END)
                 f.write(line)
