@@ -15,6 +15,12 @@ from app.api.v1.suggest import router as suggest_router
 from app.api.v1.pantry import router as pantry_router
 load_dotenv()  # populates os.environ from .env
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi import Request
+
+from app.api.v1.ingest import router as ingest_router
+
 
 print("OPENAI_API_KEY from env:", os.getenv("OPENAI_API_KEY"))
 
@@ -40,10 +46,18 @@ def create_app() -> FastAPI:
     )
     app.include_router(pantry_router)  
     app.include_router(suggest_router)
+    app.include_router(ingest_router)
+
+    @app.get("/")
+    def home(request: Request):
+        return templates.TemplateResponse("index.html", {"request": request, "title": "Pantry"})
 
     @app.get("/healthz")
     def healthz():
         return {"status": "ok"}
+    # Static files & templates
+    app.mount("/static", StaticFiles(directory="app/web/static"), name="static")
+    templates = Jinja2Templates(directory="app/web/templates")
 
     @app.get("/readyz")
     def readyz():

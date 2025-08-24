@@ -1,0 +1,25 @@
+version: "3.9"
+services:
+  pantry:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: pantry-app:latest
+    container_name: pantry
+    ports:
+      - "8002:8000"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL_SUGGEST: gpt-5-nano
+      DATA_DIR: /app/data
+      PANTRY_FILE: /app/data/pantry.json
+      EVENTS_FILE: /app/data/inventory_log.jsonl
+      CORS_ALLOW_ORIGINS: '["http://127.0.0.1:8002"]'
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/readyz"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 15s

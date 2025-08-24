@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="card">
+  <h1><b></b>Voice Ingest</b><h1>
+  <div class="row">
+    <button id="rec-start">Start Recording</button>
+    <button id="rec-stop" disabled>Stop & Extract</button>
+    <label>Language (optional)
+      <input id="rec-lang" placeholder="en, hi, ..." />
+    </label>
+  </div>
+  <div class="row">
+    <audio id="rec-audio" controls hidden></audio>
+  </div>
+  <div class="row">
+    <textarea id="rec-transcript" rows="3" placeholder="Transcript will appear here..." style="width:100%;"></textarea>
+  </div>
+  <div class="row">
+    <button id="rec-merge" disabled>Merge Extracted Items to Pantry</button>
+  </div>
+</section>
+
+
+<section class="card">
+  <h1><b>Pantry</b><h1>
+  <div id="pantry-controls">
+    <button id="refresh">Refresh</button>
+    <button id="save">Replace Pantry</button>
+  </div>
+
+  <table id="pantry-table">
+    <thead>
+      <tr><th>Name</th><th>Qty</th><th>Unit</th><th></th></tr>
+    </thead>
+    <tbody id="pantry-body">
+      <!-- rows filled by JS -->
+    </tbody>
+  </table>
+
+  <div class="row">
+    <input id="new-name" placeholder="e.g., Tomatoes" />
+    <input id="new-qty" type="number" min="0" step="0.01" placeholder="Qty" />
+    <input id="new-unit" placeholder="Unit (g, ml, cup, piece)" />
+    <button id="add-row">Add</button>
+    <button id="merge-rows">Merge Into Pantry</button>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Suggest Recipes</h2>
+  <form id="suggest-form">
+    <div class="row">
+      <label>Time (minutes) <input type="number" id="time" min="0" /></label>
+      <label>Servings <input type="number" id="servings" min="1" value="1" /></label>
+    </div>
+    <div class="row">
+      <label>Mood <input id="mood" placeholder="light, comforting, spicy" /></label>
+      <label>Diet (comma-separated) <input id="diet" placeholder="vegetarian, gluten-free" /></label>
+    </div>
+    <div class="row">
+      <label>Protein goal (g) <input type="number" id="protein" min="0" step="1" /></label>
+    </div>
+    <button type="submit">Suggest</button>
+  </form>
+
+  <div id="recipes"></div>
+</section>
+
+<section id="toast" class="toast" hidden></section>
+{% endblock %}

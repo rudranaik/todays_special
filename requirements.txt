@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pydantic-settings>=2,<3
+openai
+faster-whisper>=1.0.0
+jinja2
+python-multipart
+gunicorn
+python-multipart
+jinja2
