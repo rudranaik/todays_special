@@ -1,0 +1,70 @@
+{
+  "items": [
+    {
+      "name": "French beans",
+      "quantity": 4.0,
+      "unit": "200g"
+    },
+    {
+      "name": "Eggs",
+      "quantity": 28.0,
+      "unit": "units"
+    },
+    {
+      "name": "green chili",
+      "quantity": 1.0,
+      "unit": "50 g"
+    },
+    {
+      "name": "potatoes",
+      "quantity": 3.0,
+      "unit": "2 potatoes + 1 large sweet potato"
+    },
+    {
+      "name": "tomatoes",
+      "quantity": 5.0,
+      "unit": null
+    },
+    {
+      "name": "onions",
+      "quantity": 6.0,
+      "unit": null
+    },
+    {
+      "name": "garlic",
+      "quantity": 0.0,
+      "unit": "quantity not specified"
+    },
+    {
+      "name": "oil",
+      "quantity": 7.0,
+      "unit": "type unspecified"
+    },
+    {
+      "name": "ground oil",
+      "quantity": 0.0,
+      "unit": "unclear item; possible mis-transcription"
+    },
+    {
+      "name": "peanut oil",
+      "quantity": 0.0,
+      "unit": "quantity not stated"
+    },
+    {
+      "name": "eggs",
+      "quantity": 12.0,
+      "unit": null
+    },
+    {
+      "name": "chicken breast",
+      "quantity": 1.0,
+      "unit": null
+    },
+    {
+      "name": "cucumber",
+      "quantity": 7.0,
+      "unit": "units"
+    }
+  ],
+  "updated_at": 1756026983.671
+}

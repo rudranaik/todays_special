@@ -35,6 +35,11 @@ MODEL_NAME = os.getenv("ITEMSNAP_MODEL", "gpt-5-nano")      # extraction LLM (op
 USE_OPENAI_EXTRACTION = os.getenv("ITEMSNAP_USE_OPENAI", "0") == "1"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
+# where other env vars are read
+REVIEW_BASE = os.getenv("REVIEW_BASE", "http://127.0.0.1:8001")
+
+
+
 # ---- faster-whisper config ----
 FW_MODEL_RAW = os.getenv("ITEMSNAP_ASR_MODEL", "small")     # tiny|base|small|medium|large-v3|...
 FW_COMPUTE   = os.getenv("ITEMSNAP_ASR_COMPUTE", "int8")    # int8 (fast CPU), float16, float32
@@ -182,156 +187,191 @@ def fw_transcribe_text(path: str, fast=True) -> str:
 
 # ---- UI ----
 @app.get("/", response_class=HTMLResponse)
+@app.get("/", response_class=HTMLResponse)
 def index():
-    return """<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>ItemSnap Streaming (Audio)</title>
-<style>
-  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; margin: 24px; }
-  .card { max-width: 820px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; }
-  .row { display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
-  button { padding: 10px 14px; border: 0; border-radius: 10px; background: #2563eb; color: #fff; cursor: pointer; }
-  button.secondary { background: #111827; }
-  button:disabled { opacity: 0.6; cursor: not-allowed; }
-  input[type="file"] { padding: 6px; }
-  pre { background: #0b1020; color: #e0e6ff; padding: 14px; border-radius: 12px; overflow: auto; min-height: 80px; }
-  audio { width: 100%; margin-top: 10px; }
-  .hint { color: #6b7280; font-size: 14px; }
-  .pill { font-variant-numeric: tabular-nums; background:#eef2ff; color:#3730a3; padding:2px 8px; border-radius:999px; }
-</style>
-</head>
-<body>
-  <div class="card">
-    <h2>ItemSnap Streaming (Audio)</h2>
-    <p class="hint">Record and watch the <strong>Live Transcript</strong> appear as you speak. Or upload a file and click <strong>Analyze</strong>.</p>
+    return f"""<!doctype html>
+      <html lang="en">
+      <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width,initial-scale=1" />
+      <title>ItemSnap Streaming (Audio)</title>
+      <style>
+        body {{ font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; margin: 24px; }}
+        .card {{ max-width: 820px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; }}
+        .row {{ display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap; }}
+        button {{ padding: 10px 14px; border: 0; border-radius: 10px; background: #2563eb; color: #fff; cursor: pointer; }}
+        button.secondary {{ background: #111827; }}
+        button:disabled {{ opacity: 0.6; cursor: not-allowed; }}
+        input[type="file"] {{ padding: 6px; }}
+        pre {{ background: #0b1020; color: #e0e6ff; padding: 14px; border-radius: 12px; overflow: auto; min-height: 80px; }}
+        audio {{ width: 100%; margin-top: 10px; }}
+        .hint {{ color: #6b7280; font-size: 14px; }}
+        .pill {{ font-variant-numeric: tabular-nums; background:#eef2ff; color:#3730a3; padding:2px 8px; border-radius:999px; }}
+      </style>
+      </head>
+      <body>
+        <div class="card">
+          <h2>ItemSnap Streaming (Audio)</h2>
+          <p class="hint">Record and watch the <strong>Live Transcript</strong> appear as you speak. Or upload a file and click <strong>Analyze</strong>.</p>
 
-    <div class="row">
-      <button id="recBtn">🎙️ Record (stream)</button>
-      <button id="stopBtn" disabled>■ Stop</button>
-      <span id="timer" class="pill">00:00</span>
-      <span id="status" class="hint"></span>
-    </div>
+          <div class="row">
+            <button id="recBtn">🎙️ Record (stream)</button>
+            <button id="stopBtn" disabled>■ Stop</button>
+            <span id="timer" class="pill">00:00</span>
+            <span id="status" class="hint"></span>
+          </div>
 
-    <h3>Live Transcript</h3>
-    <pre id="live"></pre>
+          <h3>Live Transcript</h3>
+          <pre id="live"></pre>
 
-    <div class="row">
-      <input id="file" type="file" accept="audio/*" />
-      <button id="useFile" class="secondary">Use File Instead</button>
-      <button id="analyze">Analyze</button>
-    </div>
+          <div class="row">
+            <input id="file" type="file" accept="audio/*" />
+            <button id="useFile" class="secondary">Use File Instead</button>
+            <button id="analyze">Analyze</button>
+          </div>
 
-    <div id="preview"></div>
+          <div id="preview"></div>
 
-    <h3>Extracted JSON</h3>
-    <pre id="out">{}</pre>
-  </div>
+          <h3>Extracted JSON</h3>
+          <pre id="out">{{{{}}}}</pre>
+        </div>
 
-<script>
-let mediaRecorder, recordedBlob = null, timerInt = null, startedAt = 0, ws = null, chunks = [];
-const recBtn = document.getElementById('recBtn');
-const stopBtn = document.getElementById('stopBtn');
-const analyzeBtn = document.getElementById('analyze');
-const useFileBtn = document.getElementById('useFile');
-const fileInput = document.getElementById('file');
-const out = document.getElementById('out');
-const statusEl = document.getElementById('status');
-const preview = document.getElementById('preview');
-const timerEl = document.getElementById('timer');
-const live = document.getElementById('live');
+      <script>
+      let mediaRecorder, recordedBlob = null, timerInt = null, startedAt = 0, ws = null, chunks = [];
+      const REVIEW_BASE = (() => {{
+        // Try to use server-provided value (if valid and has a port)
+        try {{
+          const u = new URL("{REVIEW_BASE}");
+          if (u.origin && (u.port || u.origin.includes("://localhost"))) return u.origin;
+        }} catch (e) {{ /* fall through */ }}
 
-function fmt(t){ const s = Math.floor(t/1000); return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
-function startTimer(){ startedAt = Date.now(); timerInt = setInterval(()=>{ timerEl.textContent = fmt(Date.now()-startedAt); }, 200); }
-function stopTimer(){ clearInterval(timerInt); timerInt=null; }
+        // Fallback: take current origin (e.g., http://127.0.0.1:8000) and swap port to 8001
+        const origin = window.location.origin;                   // http://127.0.0.1:8000
+        const host = origin.replace(/:\d+$/, "");                // http://127.0.0.1
+        return host + ":8001";                                   // http://127.0.0.1:8001
+      }})();
+      console.log("REVIEW_BASE =", REVIEW_BASE);
 
-async function startStreaming() {
-  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/transcribe');
-  ws.onmessage = (ev) => {
-    try {
-      const msg = JSON.parse(ev.data);
-      if (msg.error) { live.textContent = '[error] ' + msg.error; return; }
-      live.textContent = (msg.final ? '[final] ' : '[partial] ') + (msg.text || '');
-      if (msg.final) { // auto-run analysis on final?
-        // Optionally copy to out or call /analyze with a file; we keep UX simple here.
-      }
-    } catch (e) { console.warn('WS parse error', e); }
-  };
-}
+      const recBtn = document.getElementById('recBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const analyzeBtn = document.getElementById('analyze');
+      const useFileBtn = document.getElementById('useFile');
+      const fileInput = document.getElementById('file');
+      const out = document.getElementById('out');
+      const statusEl = document.getElementById('status');
+      const preview = document.getElementById('preview');
+      const timerEl = document.getElementById('timer');
+      const live = document.getElementById('live');
 
-recBtn.onclick = async () => {
-  chunks = []; recordedBlob = null; out.textContent = '{}'; statusEl.textContent = ''; preview.innerHTML = ''; live.textContent = '';
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    await startStreaming();
-    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 48000 });
-    mediaRecorder.ondataavailable = async (e) => {
-      if (e.data && e.data.size > 0) {
-        chunks.push(e.data);
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          const buf = await e.data.arrayBuffer();
-          ws.send(buf);
-        }
-      }
-    };
-    mediaRecorder.start(250); // 250ms slices
-    recBtn.disabled = true; stopBtn.disabled = false; startTimer();
-  } catch (err) {
-    statusEl.textContent = 'Mic/WS error: ' + err;
-  }
-};
+      function fmt(t){{ const s = Math.floor(t/1000); return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }}
+      function startTimer(){{ startedAt = Date.now(); timerInt = setInterval(()=>{{ timerEl.textContent = fmt(Date.now()-startedAt); }}, 200); }}
+      function stopTimer(){{ clearInterval(timerInt); timerInt=null; }}
 
-stopBtn.onclick = async () => {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop();
-    mediaRecorder.stream.getTracks().forEach(t => t.stop());
-  }
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send('__STOP__');
-  }
-  // Build a Blob from chunks for optional /analyze
-  if (chunks.length) {
-    recordedBlob = new Blob(chunks, { type: 'audio/webm;codecs=opus' });
-    const url = URL.createObjectURL(recordedBlob);
-    const sizeKB = Math.round(recordedBlob.size / 1024);
-    preview.innerHTML = '<audio controls src="' + url + '"></audio><div class="hint">Size: ' + sizeKB + ' KB</div>';
-  }
-  recBtn.disabled = false; stopBtn.disabled = true; stopTimer();
-};
+      async function startStreaming() {{
+        ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/transcribe');
+        ws.onmessage = (ev) => {{
+          try {{
+            const msg = JSON.parse(ev.data);
+            if (msg.error) {{ live.textContent = '[error] ' + msg.error; return; }}
+            live.textContent = (msg.final ? '[final] ' : '[partial] ') + (msg.text || '');
+            if (msg.final) {{ /* hook for auto-run if desired */ }}
+          }} catch (e) {{ console.warn('WS parse error', e); }}
+        }};
+      }}
 
-useFileBtn.onclick = () => fileInput.click();
-fileInput.addEventListener('change', () => {
-  const f = fileInput.files?.[0]; if (!f) return;
-  recordedBlob = f;
-  const url = URL.createObjectURL(f);
-  preview.innerHTML = '<audio controls src="' + url + '"></audio><div class="hint">File: ' + f.name + ' (' + Math.round(f.size/1024) + ' KB)</div>';
-  out.textContent = '{}';
-});
+      recBtn.onclick = async () => {{
+        chunks = []; recordedBlob = null; out.textContent = '{{{{}}}}'; statusEl.textContent = ''; preview.innerHTML = ''; live.textContent = '';
+        try {{
+          const stream = await navigator.mediaDevices.getUserMedia({{ audio: true }});
+          await startStreaming();
+          mediaRecorder = new MediaRecorder(stream, {{ mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 48000 }});
+          mediaRecorder.ondataavailable = async (e) => {{
+            if (e.data && e.data.size > 0) {{
+              chunks.push(e.data);
+              if (ws && ws.readyState === WebSocket.OPEN) {{
+                const buf = await e.data.arrayBuffer();
+                ws.send(buf);
+              }}
+            }}
+          }};
+          mediaRecorder.start(250); // 250ms slices
+          recBtn.disabled = true; stopBtn.disabled = false; startTimer();
+        }} catch (err) {{
+          statusEl.textContent = 'Mic/WS error: ' + err;
+        }}
+      }};
 
-analyzeBtn.onclick = async () => {
-  if (!recordedBlob) { alert('Record or choose a file first'); return; }
-  try {
-    statusEl.textContent = 'Uploading…'; analyzeBtn.disabled = true;
-    const form = new FormData();
-    const fname = recordedBlob.name || 'speech.webm';
-    form.append('audio', recordedBlob, fname);
-    const resp = await fetch('/analyze', { method: 'POST', body: form });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const json = await resp.json();
-    out.textContent = JSON.stringify(json, null, 2);
-    statusEl.textContent = 'Done';
-  } catch (e) {
-    out.textContent = JSON.stringify({ error: String(e) }, null, 2);
-    statusEl.textContent = 'Error';
-  } finally {
-    analyzeBtn.disabled = false;
-  }
-};
-</script>
-</body>
-</html>"""
+      stopBtn.onclick = async () => {{
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {{
+          mediaRecorder.stop();
+          mediaRecorder.stream.getTracks().forEach(t => t.stop());
+        }}
+        if (ws && ws.readyState === WebSocket.OPEN) {{
+          ws.send('__STOP__');
+        }}
+        // Build a Blob from chunks for optional /analyze
+        if (chunks.length) {{
+          recordedBlob = new Blob(chunks, {{ type: 'audio/webm;codecs=opus' }});
+          const url = URL.createObjectURL(recordedBlob);
+          const sizeKB = Math.round(recordedBlob.size / 1024);
+          preview.innerHTML = '<audio controls src="' + url + '"></audio><div class="hint">Size: ' + sizeKB + ' KB</div>';
+        }}
+        recBtn.disabled = false; stopBtn.disabled = true; stopTimer();
+      }};
+
+      useFileBtn.onclick = () => fileInput.click();
+      fileInput.addEventListener('change', () => {{
+        const f = fileInput.files?.[0]; if (!f) return;
+        recordedBlob = f;
+        const url = URL.createObjectURL(f);
+        preview.innerHTML = '<audio controls src="' + url + '"></audio><div class="hint">File: ' + f.name + ' (' + Math.round(f.size/1024) + ' KB)</div>';
+        out.textContent = '{{{{}}}}';
+      }});
+
+      analyzeBtn.onclick = async () => {{
+        if (!recordedBlob) {{ alert('Record or choose a file first'); return; }}
+        try {{
+          statusEl.textContent = 'Uploading…'; analyzeBtn.disabled = true;
+          const form = new FormData();
+          const fname = recordedBlob.name || 'speech.webm';
+          form.append('audio', recordedBlob, fname);
+          const resp = await fetch('/analyze', {{ method: 'POST', body: form }});
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          const data = await resp.json();  // <-- fix: use `data` going forward
+          out.textContent = JSON.stringify(data, null, 2);
+
+          // === Send items to the Review UI & open the editor ===
+          try {{
+            const items = (data && data.items) ? data.items.map(it => ({{
+              name: it.name,
+              quantity: Number(it.quantity || 0),
+              unit: it.unit || it.notes || null
+            }})) : [];
+
+            if (items.length > 0) {{
+              await fetch(`${{REVIEW_BASE}}/api/ingest`, {{
+                method: 'POST',
+                headers: {{'Content-Type': 'application/json'}},
+                body: JSON.stringify({{ items }})
+              }});
+              window.location.href = `${{REVIEW_BASE}}/review`;
+            }}
+          }} catch (e) {{
+            console.error("Failed to forward to Review UI", e);
+          }}
+
+          statusEl.textContent = 'Done';
+        }} catch (e) {{
+          out.textContent = JSON.stringify({{ error: String(e) }}, null, 2);
+          statusEl.textContent = 'Error';
+        }} finally {{
+          analyzeBtn.disabled = false;
+        }}
+      }};
+      </script>
+      </body>
+      </html>"""
+
 
 # ---- WebSocket: streaming partials ----
 @app.websocket("/ws/transcribe")
