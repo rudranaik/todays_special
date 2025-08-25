@@ -15,6 +15,7 @@ const els = {
   stagedList: document.getElementById("staged-list"),
   drawer: document.getElementById("drawer"),
   drawerToggle: document.getElementById("drawer-toggle"),
+  drawerOverlay: document.getElementById("drawer-overlay"),
 };
 
 let localRows = []; // rows staged for merge
@@ -197,6 +198,14 @@ els.suggestForm.addEventListener("submit", suggestRecipes);
 els.drawerToggle?.addEventListener("click", () => {
   els.drawer.classList.toggle("open");
 });
+els.drawerOverlay?.addEventListener("click", () => {
+  els.drawer.classList.remove("open");
+});
+document.querySelectorAll("#drawer a").forEach(a => {
+  a.addEventListener("click", () => {
+    els.drawer.classList.remove("open");
+  });
+});
 
 // expose time/servings ids
 els.time = document.getElementById("time");
@@ -295,7 +304,7 @@ async function uploadAndExtract(blob) {
     renderStaged();
 
     // show a toast and enable Merge button
-    toast(`Staged ${extracted.length} items from voice. Review below, then "Merge Into Pantry".`);
+    toast(`Staged ${extracted.length} items from voice. Review in the staging area, then "Save Items to Pantry".`);
     vEls.merge.disabled = false;
   } catch (err) {
     toast(`Upload error: ${err.message || err}`, true);
