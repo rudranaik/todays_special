@@ -13,6 +13,8 @@ const els = {
   suggestForm: document.getElementById("suggest-form"),
   recipes: document.getElementById("recipes"),
   stagedList: document.getElementById("staged-list"),
+  drawer: document.getElementById("drawer"),
+  drawerToggle: document.getElementById("drawer-toggle"),
 };
 
 let localRows = []; // rows staged for merge
@@ -192,6 +194,9 @@ els.save.addEventListener("click", replacePantry);
 els.addRow.addEventListener("click", addLocalRow);
 els.mergeRows.addEventListener("click", mergeRows);
 els.suggestForm.addEventListener("submit", suggestRecipes);
+els.drawerToggle?.addEventListener("click", () => {
+  els.drawer.classList.toggle("open");
+});
 
 // expose time/servings ids
 els.time = document.getElementById("time");

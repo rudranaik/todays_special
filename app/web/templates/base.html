@@ -8,11 +8,15 @@
 </head>
 <body>
   <header class="nav">
+    <button id="drawer-toggle" class="burger" aria-label="Menu">&#9776;</button>
     <div class="brand">Pantry</div>
     <nav>
       <a href="/">Home</a>
     </nav>
   </header>
+  <aside id="drawer" class="drawer">
+    {% block drawer %}{% endblock %}
+  </aside>
   <main class="container">
     {% block content %}{% endblock %}
   </main>
