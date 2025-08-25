@@ -12,9 +12,24 @@ const els = {
   toast: document.getElementById("toast"),
   suggestForm: document.getElementById("suggest-form"),
   recipes: document.getElementById("recipes"),
+  stagedList: document.getElementById("staged-list"),
 };
 
 let localRows = []; // rows staged for merge
+
+function renderStaged() {
+  els.stagedList.innerHTML = "";
+  if (localRows.length === 0) {
+    els.stagedList.innerHTML = '<li class="muted">No items staged</li>';
+  } else {
+    localRows.forEach(r => {
+      const li = document.createElement("li");
+      li.textContent = `${r.name} — ${r.quantity || 0} ${r.unit || ""}`;
+      els.stagedList.appendChild(li);
+    });
+  }
+  els.mergeRows.disabled = localRows.length === 0;
+}
 
 function toast(msg, isError=false) {
   els.toast.textContent = msg;
@@ -97,6 +112,7 @@ function addLocalRow() {
   localRows.push(row);
   els.name.value = ""; els.qty.value = ""; els.unit.value = "";
   toast(`Staged: ${row.name} (${row.quantity || 0} ${row.unit || ""})`);
+  renderStaged();
 }
 
 async function mergeRows() {
@@ -116,6 +132,7 @@ async function mergeRows() {
   current = body;
   renderPantry(current.items);
   toast("Merged into pantry");
+  renderStaged();
 }
 
 async function suggestRecipes(ev) {
@@ -181,13 +198,14 @@ els.time = document.getElementById("time");
 
 // initial load
 loadPantry();
+renderStaged();
+updateRecordButton(false);
 
 // ---------------- Voice Ingest ----------------
 let mediaRecorder = null;
 let recordedChunks = [];
 const vEls = {
-  start: document.getElementById("rec-start"),
-  stop: document.getElementById("rec-stop"),
+  toggle: document.getElementById("rec-toggle"),
   lang: document.getElementById("rec-lang"),
   audio: document.getElementById("rec-audio"),
   transcript: document.getElementById("rec-transcript"),
@@ -216,8 +234,7 @@ async function startRecording() {
     };
 
     mediaRecorder.start(100); // gather chunks every 100ms
-    vEls.start.disabled = true;
-    vEls.stop.disabled = false;
+    updateRecordButton(true);
     toast("Recording started");
   } catch (err) {
     toast(`Mic error: ${err.message || err}`, true);
@@ -230,8 +247,7 @@ function stopRecording() {
       mediaRecorder.stop();
       mediaRecorder.stream.getTracks().forEach((t) => t.stop());
     }
-    vEls.start.disabled = false;
-    vEls.stop.disabled = true;
+    updateRecordButton(false);
   } catch (err) {
     toast(`Stop error: ${err.message || err}`, true);
   }
@@ -270,6 +286,7 @@ async function uploadAndExtract(blob) {
       quantity: Number(i.quantity || 0),
       unit: i.unit || null,
     })));
+    renderStaged();
 
     // show a toast and enable Merge button
     toast(`Staged ${extracted.length} items from voice. Review below, then "Merge Into Pantry".`);
@@ -279,8 +296,25 @@ async function uploadAndExtract(blob) {
   }
 }
 
-vEls.start?.addEventListener("click", startRecording);
-vEls.stop?.addEventListener("click", stopRecording);
+function updateRecordButton(rec) {
+  if (rec) {
+    vEls.toggle.textContent = "Stop & Extract";
+    vEls.toggle.classList.add("recording");
+  } else {
+    vEls.toggle.textContent = "Start Recording";
+    vEls.toggle.classList.remove("recording");
+  }
+}
+
+function toggleRecording() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+}
+
+vEls.toggle?.addEventListener("click", toggleRecording);
 vEls.merge?.addEventListener("click", async () => {
   // Reuse existing mergeRows (it consumes localRows and merges into pantry)
   await mergeRows();
