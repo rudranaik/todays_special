@@ -204,7 +204,6 @@ els.time = document.getElementById("time");
 // initial load
 loadPantry();
 renderStaged();
-updateRecordButton(false);
 
 // ---------------- Voice Ingest ----------------
 let mediaRecorder = null;
@@ -216,6 +215,8 @@ const vEls = {
   transcript: document.getElementById("rec-transcript"),
   merge: document.getElementById("rec-merge"),
 };
+
+updateRecordButton(false);
 
 async function startRecording() {
   try {
