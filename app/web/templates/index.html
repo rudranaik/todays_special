@@ -4,8 +4,7 @@
 <section class="card">
   <h1><b></b>Voice Ingest</b><h1>
   <div class="row">
-    <button id="rec-start">Start Recording</button>
-    <button id="rec-stop" disabled>Stop & Extract</button>
+    <button id="rec-toggle">Start Recording</button>
     <label>Language (optional)
       <input id="rec-lang" placeholder="en, hi, ..." />
     </label>
@@ -43,7 +42,11 @@
     <input id="new-qty" type="number" min="0" step="0.01" placeholder="Qty" />
     <input id="new-unit" placeholder="Unit (g, ml, cup, piece)" />
     <button id="add-row">Add</button>
-    <button id="merge-rows">Merge Into Pantry</button>
+    <button id="merge-rows" disabled>Merge Into Pantry</button>
+  </div>
+  <div id="staged-container">
+    <h3>Staged Items</h3>
+    <ul id="staged-list"></ul>
   </div>
 </section>
 
