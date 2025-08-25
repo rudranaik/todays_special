@@ -1,40 +1,48 @@
 {% extends "base.html" %}
+
 {% block drawer %}
-<details id="pantry-details">
-  <summary>Pantry</summary>
-  <section class="card">
-    <h1><b>Pantry</b></h1>
-    <div id="pantry-controls">
-      <button id="refresh">Refresh</button>
-      <button id="save">Replace Pantry</button>
-    </div>
-
-    <table id="pantry-table">
-      <thead>
-        <tr><th>Name</th><th>Qty</th><th>Unit</th><th></th></tr>
-      </thead>
-      <tbody id="pantry-body">
-        <!-- rows filled by JS -->
-      </tbody>
-    </table>
-
-    <div class="row">
-      <input id="new-name" placeholder="e.g., Tomatoes" />
-      <input id="new-qty" type="number" min="0" step="0.01" placeholder="Qty" />
-      <input id="new-unit" placeholder="Unit (g, ml, cup, piece)" />
-      <button id="add-row">Add</button>
-      <button id="merge-rows" disabled>Merge Into Pantry</button>
-    </div>
-    <div id="staged-container">
-      <h3>Staged Items</h3>
-      <ul id="staged-list"></ul>
-    </div>
-  </section>
-</details>
+<nav>
+  <a href="#pantry" class="drawer-link">Pantry</a>
+  <a href="#voice" class="drawer-link">Voice Ingest</a>
+  <a href="#recipes-section" class="drawer-link">Recipes</a>
+</nav>
 {% endblock %}
+
 {% block content %}
 
-<section class="card">
+<section id="pantry" class="card">
+  <h1><b>Pantry</b></h1>
+  <div id="pantry-controls">
+    <button id="refresh">Refresh</button>
+    <button id="save">Replace Pantry</button>
+  </div>
+
+  <table id="pantry-table">
+    <thead>
+      <tr><th>Name</th><th>Qty</th><th>Unit</th><th></th></tr>
+    </thead>
+    <tbody id="pantry-body">
+      <!-- rows filled by JS -->
+    </tbody>
+  </table>
+
+  <div class="row">
+    <input id="new-name" placeholder="e.g., Tomatoes" />
+    <input id="new-qty" type="number" min="0" step="0.01" placeholder="Qty" />
+    <input id="new-unit" placeholder="Unit (g, ml, cup, piece)" />
+    <button id="add-row">Add</button>
+  </div>
+</section>
+
+<section id="staging" class="card">
+  <h1><b>Staging Area</b></h1>
+  <ul id="staged-list"></ul>
+  <div class="row">
+    <button id="merge-rows" disabled>Save Items to Pantry</button>
+  </div>
+</section>
+
+<section id="voice" class="card">
   <h1><b>Voice Ingest</b></h1>
   <div class="row">
     <button id="rec-toggle">Start Recording</button>
@@ -51,9 +59,9 @@
   <div class="row">
     <button id="rec-merge" disabled>Merge Extracted Items to Pantry</button>
   </div>
- </section>
+</section>
 
-<section class="card">
+<section class="card" id="recipes-section">
   <h2>Suggest Recipes</h2>
   <form id="suggest-form">
     <div class="row">
@@ -75,3 +83,4 @@
 
 <section id="toast" class="toast" hidden></section>
 {% endblock %}
+
