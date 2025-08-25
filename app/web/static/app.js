@@ -11,11 +11,12 @@ const els = {
   unit: document.getElementById("new-unit"),
   toast: document.getElementById("toast"),
   suggestForm: document.getElementById("suggest-form"),
+  suggestBtn: document.querySelector("#suggest-form button[type='submit']"),
   recipes: document.getElementById("recipes"),
   stagedList: document.getElementById("staged-list"),
-  drawer: document.getElementById("drawer"),
-  drawerToggle: document.getElementById("drawer-toggle"),
-  drawerOverlay: document.getElementById("drawer-overlay"),
+  pantryToggle: document.getElementById("pantry-toggle"),
+  pantryContent: document.getElementById("pantry-content"),
+  suggestStatus: document.getElementById("suggest-status"),
 };
 
 let localRows = []; // rows staged for merge
@@ -63,10 +64,11 @@ function renderPantry(items) {
   });
 
   els.tbody.querySelectorAll("button[data-del]").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const i = Number(btn.dataset.del);
       current.items.splice(i, 1);
       renderPantry(current.items);
+      await replacePantry();
     });
   });
 }
@@ -140,6 +142,11 @@ async function mergeRows() {
 
 async function suggestRecipes(ev) {
   ev.preventDefault();
+  els.suggestBtn.disabled = true;
+  const oldText = els.suggestBtn.textContent;
+  els.suggestBtn.textContent = "Generating...";
+  els.suggestStatus.textContent = "Generating recipes...";
+  els.suggestStatus.hidden = false;
   const constraints = {
     time_minutes: els.time?.value ? Number(els.time.value) : null,
     mood: document.getElementById("mood").value || null,
@@ -153,10 +160,16 @@ async function suggestRecipes(ev) {
     body: JSON.stringify(constraints),
   });
   const body = await r.json().catch(() => ({}));
+  els.suggestBtn.disabled = false;
+  els.suggestBtn.textContent = oldText;
   if (!r.ok) {
     toast(body.detail || "Suggest failed", true);
+    els.suggestStatus.textContent = "Generation failed";
+    setTimeout(() => (els.suggestStatus.hidden = true), 3000);
     return;
   }
+  els.suggestStatus.textContent = "Recipes ready";
+  setTimeout(() => (els.suggestStatus.hidden = true), 3000);
   renderRecipes(body.recipes || []);
 }
 
@@ -195,16 +208,10 @@ els.save.addEventListener("click", replacePantry);
 els.addRow.addEventListener("click", addLocalRow);
 els.mergeRows.addEventListener("click", mergeRows);
 els.suggestForm.addEventListener("submit", suggestRecipes);
-els.drawerToggle?.addEventListener("click", () => {
-  els.drawer.classList.toggle("open");
-});
-els.drawerOverlay?.addEventListener("click", () => {
-  els.drawer.classList.remove("open");
-});
-document.querySelectorAll("#drawer a").forEach(a => {
-  a.addEventListener("click", () => {
-    els.drawer.classList.remove("open");
-  });
+els.pantryToggle.addEventListener("click", () => {
+  const hidden = els.pantryContent.hidden;
+  els.pantryContent.hidden = !hidden;
+  els.pantryToggle.textContent = hidden ? "Hide" : "Show";
 });
 
 // expose time/servings ids
@@ -223,6 +230,7 @@ const vEls = {
   audio: document.getElementById("rec-audio"),
   transcript: document.getElementById("rec-transcript"),
   merge: document.getElementById("rec-merge"),
+  status: document.getElementById("transcribe-status"),
 };
 
 updateRecordButton(false);
@@ -270,6 +278,8 @@ function stopRecording() {
 
 async function uploadAndExtract(blob) {
   try {
+    vEls.status.textContent = "Transcribing...";
+    vEls.status.hidden = false;
     const fd = new FormData();
     fd.append("file", blob, "note.webm");
     const lang = (vEls.lang.value || "").trim();
@@ -283,10 +293,14 @@ async function uploadAndExtract(blob) {
     const body = await r.json().catch(() => ({}));
     if (!r.ok) {
       toast(body.detail || "Transcribe/Extract failed", true);
+      vEls.status.textContent = "Transcription failed";
+      setTimeout(() => (vEls.status.hidden = true), 3000);
       return;
     }
 
     vEls.transcript.value = body.transcript || "";
+    vEls.status.textContent = "Transcription complete";
+    setTimeout(() => (vEls.status.hidden = true), 3000);
     const extracted = Array.isArray(body.items) ? body.items : [];
 
     if (extracted.length === 0) {
@@ -308,6 +322,8 @@ async function uploadAndExtract(blob) {
     vEls.merge.disabled = false;
   } catch (err) {
     toast(`Upload error: ${err.message || err}`, true);
+    vEls.status.textContent = "Transcription failed";
+    setTimeout(() => (vEls.status.hidden = true), 3000);
   }
 }
 
