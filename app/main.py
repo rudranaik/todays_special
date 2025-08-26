@@ -22,7 +22,7 @@ from fastapi import Request
 from app.api.v1.ingest import router as ingest_router
 
 
-print("OPENAI_API_KEY from env:", os.getenv("OPENAI_API_KEY"))
+# print("OPENAI_API_KEY from env:", os.getenv("OPENAI_API_KEY"))
 
 
 @asynccontextmanager

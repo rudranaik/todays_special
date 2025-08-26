@@ -5,7 +5,7 @@ from typing import Optional, List
 from dotenv import load_dotenv
 import os
 load_dotenv()  # populates os.environ from .env
-print("OPENAI_API_KEY from env:", os.getenv("OPENAI_API_KEY"))
+# print("OPENAI_API_KEY from env:", os.getenv("OPENAI_API_KEY"))
 
 class Settings(BaseSettings):
     # LLM

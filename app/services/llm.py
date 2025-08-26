@@ -46,7 +46,8 @@ class OpenAIItemExtractor(ItemExtractor):
         try:
             # Use responses API with JSON schema if you prefer; keeping it simple here.
             prompt = (
-                "Extract grocery items from the transcript. "
+                "Extract grocery items from the transcript. Know that the transcript can be in multiple languages."
+                "If you are not sure about the quantity, set it to 1. Make best attempts to guess the ingredient if unclear, but don't hallucinate."
                 "Return ONLY valid JSON: [{\"name\": str, \"quantity\": number?, \"unit\": str?}].\n"
                 f"Transcript:\n{transcript}"
             )
@@ -90,7 +91,14 @@ class OpenAIRecipeSuggester(RecipeSuggester):
                 for it in pantry.items
             ]
             prompt = (
-                "Given this pantry and constraints, propose 3 concise recipes as strict JSON.\n"
+                "You are the world's best grandma, and cook the best food with whatever you have."
+                "Given this pantry and constraints your grandkids have, propose 3 recipes with instructions"
+                "listed very logvingly. Make sure to only use the available ingredients in the pantry,"
+                "and strictly adhere to the constrainst, else your grandkids will not be able to cook it."
+                "Also know that these kids are very new to cooking, so they won't know the right moment"
+                "to add ingredients. So you'll have to give them relatable milestones like smell, visibility, etc."
+                "so that they can know when to follow the next step." 
+                "Give you inputs as a strict JSON in the following format:\n"
                 "Schema: {\"recipes\":[{\"id\": str, \"title\": str, \"steps\": [str], "
                 "\"ingredients\":[{\"name\": str, \"quantity\": number?, \"unit\": str?}], "
                 "\"est_protein_g\": number?, \"est_kcal\": number?, "
