@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from app.config import Settings
 from app.core.models import Pantry, SuggestConstraints, SuggestResponse, InventoryEvent
 from app.services.llm import OpenAIRecipeSuggester, SimpleRecipeSuggester
@@ -36,6 +36,7 @@ def suggest_recipes(
     constraints: SuggestConstraints,
     suggester: OpenAIRecipeSuggester = Depends(get_suggester),
     repos = Depends(get_repos),
+    request: Request = None,
 ):
     pantry_repo, event_repo = repos
     try:
@@ -50,16 +51,28 @@ def suggest_recipes(
         dt_ms = (time.perf_counter() - t0) * 1000.0
         # best-effort latency log
         try:
+            # capture tool/model used
+            engine = "openai" if hasattr(suggester, "_model") else "local"
+            model = getattr(suggester, "_model", "local")
+            device_id = request.headers.get('X-Device-Id') if request else None
+            corr_id = request.headers.get('X-Correlation-Id') if request else None
             MetricsLogger().log_latency(
                 name="suggest_generate",
                 duration_ms=dt_ms,
                 origin="backend",
-                extra={"servings": constraints.servings, "has_constraints": any([
-                    constraints.time_minutes is not None,
-                    bool(constraints.mood),
-                    bool(constraints.diet_conditions),
-                    constraints.protein_goal_g is not None,
-                ])},
+                extra={
+                    "servings": constraints.servings,
+                    "has_constraints": any([
+                        constraints.time_minutes is not None,
+                        bool(constraints.mood),
+                        bool(constraints.diet_conditions),
+                        constraints.protein_goal_g is not None,
+                    ]),
+                    "engine": engine,
+                    "model": model,
+                },
+                user_id=device_id,
+                corr_id=corr_id,
             )
         except Exception:
             pass

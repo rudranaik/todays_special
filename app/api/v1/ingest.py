@@ -4,7 +4,7 @@ import os
 import tempfile
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status, Request
 import time
 from pydantic import BaseModel
 
@@ -44,6 +44,7 @@ async def transcribe(
     file: UploadFile = File(..., description="Audio file (webm/mp3/wav/m4a)"),
     language: Optional[str] = Form(None, description="ISO code like 'en','hi'"),
     asr: WhisperASR = Depends(get_asr),
+    request: Request = None,
 ):
     # persist upload to a temp file for faster-whisper
     logger = MetricsLogger()
@@ -61,11 +62,21 @@ async def transcribe(
         transcript = asr.transcribe_file(tmp_path, language=language)
         dt_ms = (time.perf_counter() - t0) * 1000.0
         # best-effort log
+        device_id = request.headers.get('X-Device-Id') if request else None
+        corr_id = request.headers.get('X-Correlation-Id') if request else None
         logger.log_latency(
             name="transcribe",
             duration_ms=dt_ms,
             origin="backend",
-            extra={"bytes": len(content or b""), "language": language or None},
+            extra={
+                "bytes": len(content or b""),
+                "language": language or None,
+                "asr_model": getattr(asr, "model_name", None),
+                "asr_compute_type": getattr(asr, "compute_type", None),
+                "asr_beam_size": getattr(asr, "beam_size", None),
+            },
+            user_id=device_id,
+            corr_id=corr_id,
         )
     except ASRError as e:
         raise HTTPException(status_code=502, detail=str(e))
@@ -82,9 +93,27 @@ async def extract_from_text(
     request: TextIngestRequest,
     extractor: OpenAIItemExtractor = Depends(get_extractor),
     events: JSONEventRepo = Depends(get_event_repo),
+    http: Request = None,
 ):
+    logger = MetricsLogger()
     try:
+        t0 = time.perf_counter()
         items: List[Item] = extractor.extract(request.text)
+        dt_ms = (time.perf_counter() - t0) * 1000.0
+        device_id = http.headers.get('X-Device-Id') if http else None
+        corr_id = http.headers.get('X-Correlation-Id') if http else None
+        logger.log_latency(
+            name="extract_items",
+            duration_ms=dt_ms,
+            origin="backend",
+            extra={
+                "engine": "openai",
+                "model": getattr(extractor, "_model", None),
+                "chars": len(request.text or ""),
+            },
+            user_id=device_id,
+            corr_id=corr_id,
+        )
     except LLMError as e:
         raise HTTPException(status_code=502, detail=f"Item extraction failed: {e}")
 
@@ -104,6 +133,7 @@ async def transcribe_and_extract(
     asr: WhisperASR = Depends(get_asr),
     extractor: OpenAIItemExtractor = Depends(get_extractor),
     events: JSONEventRepo = Depends(get_event_repo),
+    request: Request = None,
 ):
     # persist upload to a temp file for faster-whisper
     try:
@@ -115,8 +145,27 @@ async def transcribe_and_extract(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Could not read upload: {e}")
 
+    logger = MetricsLogger()
     try:
+        t0 = time.perf_counter()
         transcript = asr.transcribe_file(tmp_path, language=language)
+        dt_ms = (time.perf_counter() - t0) * 1000.0
+        device_id = request.headers.get('X-Device-Id') if request else None
+        corr_id = request.headers.get('X-Correlation-Id') if request else None
+        logger.log_latency(
+            name="transcribe",
+            duration_ms=dt_ms,
+            origin="backend",
+            extra={
+                "bytes": len(content or b""),
+                "language": language or None,
+                "asr_model": getattr(asr, "model_name", None),
+                "asr_compute_type": getattr(asr, "compute_type", None),
+                "asr_beam_size": getattr(asr, "beam_size", None),
+            },
+            user_id=device_id,
+            corr_id=corr_id,
+        )
     except ASRError as e:
         raise HTTPException(status_code=502, detail=str(e))
     finally:
@@ -126,7 +175,21 @@ async def transcribe_and_extract(
             pass
 
     try:
+        t1 = time.perf_counter()
         items: List[Item] = extractor.extract(transcript)
+        dt_ms2 = (time.perf_counter() - t1) * 1000.0
+        logger.log_latency(
+            name="extract_items",
+            duration_ms=dt_ms2,
+            origin="backend",
+            extra={
+                "engine": "openai",
+                "model": getattr(extractor, "_model", None),
+                "chars": len(transcript or ""),
+            },
+            user_id=device_id,
+            corr_id=corr_id,
+        )
     except LLMError as e:
         # return transcript so user can still copy/edit, but signal failure clearly
         raise HTTPException(status_code=502, detail=f"Item extraction failed: {e}")

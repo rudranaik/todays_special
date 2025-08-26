@@ -20,6 +20,10 @@ class WhisperASR:
                 compute_type=settings.asr_compute_type,
             )
             self._beam_size = settings.asr_beam_size
+            # Expose config for metrics
+            self.model_name = settings.asr_model
+            self.compute_type = settings.asr_compute_type
+            self.beam_size = settings.asr_beam_size
         except Exception as e:
             raise ASRError(f"Failed to initialize Whisper model: {e}") from e
 

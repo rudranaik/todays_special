@@ -19,6 +19,26 @@ const els = {
   suggestStatus: document.getElementById("suggest-status"),
 };
 
+// ---- Identity & correlation helpers ----
+function getDeviceId() {
+  try {
+    let id = localStorage.getItem('ts_device_id');
+    if (!id) {
+      id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : `dev-${Math.random().toString(36).slice(2)}-${Date.now()}`;
+      localStorage.setItem('ts_device_id', id);
+    }
+    return id;
+  } catch {
+    return `dev-${Date.now()}`;
+  }
+}
+function newCorrId() {
+  try { return (crypto && crypto.randomUUID) ? crypto.randomUUID() : `corr-${Math.random().toString(36).slice(2)}-${Date.now()}`; }
+  catch { return `corr-${Date.now()}`; }
+}
+const DEVICE_ID = getDeviceId();
+let lastTranscribeCorrId = null;
+
 let localRows = []; // rows staged for merge
 
 // ---- Category grouping config ----
@@ -285,6 +305,7 @@ async function mergeRows() {
 async function suggestRecipes(ev) {
   ev.preventDefault();
   const t0 = performance.now();
+  const corr = newCorrId();
   els.suggestBtn.disabled = true;
   const oldText = els.suggestBtn.textContent;
   els.suggestBtn.textContent = "Generating...";
@@ -299,7 +320,7 @@ async function suggestRecipes(ev) {
   };
   const r = await fetch(`${apiBase}/api/suggest_recipes`, {
     method: "POST",
-    headers: { "Content-Type":"application/json" },
+    headers: { "Content-Type":"application/json", "X-Device-Id": DEVICE_ID, "X-Correlation-Id": corr },
     body: JSON.stringify(constraints),
   });
   const body = await r.json().catch(() => ({}));
@@ -320,7 +341,7 @@ async function suggestRecipes(ev) {
     await fetch(`${apiBase}/api/v1/metrics/ui`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "suggest_render", duration_ms: dt, extra: { count: (body.recipes || []).length } }),
+      body: JSON.stringify({ name: "suggest_render", duration_ms: dt, user: DEVICE_ID, corr, extra: { count: (body.recipes || []).length } }),
     });
   } catch (_) { /* ignore */ }
 }
@@ -430,6 +451,8 @@ function stopRecording() {
 async function uploadAndTranscribe(blob) {
   try {
     const t0 = performance.now();
+    const corr = newCorrId();
+    lastTranscribeCorrId = corr;
     vEls.status.textContent = "Transcribing...";
     vEls.status.hidden = false;
     const fd = new FormData();
@@ -437,6 +460,7 @@ async function uploadAndTranscribe(blob) {
 
     const r = await fetch(`${apiBase}/api/v1/ingest/transcribe`, {
       method: "POST",
+      headers: { "X-Device-Id": DEVICE_ID, "X-Correlation-Id": corr },
       body: fd,
     });
 
@@ -459,7 +483,7 @@ async function uploadAndTranscribe(blob) {
       await fetch(`${apiBase}/api/v1/metrics/ui`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: "transcribe_e2e", duration_ms: dt, extra: { size_bytes: blob.size } }),
+        body: JSON.stringify({ name: "transcribe_e2e", duration_ms: dt, user: DEVICE_ID, corr, extra: { size_bytes: blob.size } }),
       });
     } catch (_) { /* ignore */ }
 
@@ -477,13 +501,15 @@ async function extractItemsFromTranscript() {
     return;
   }
 
+  const t0 = performance.now();
+  const corr = lastTranscribeCorrId || newCorrId();
   vEls.extract.disabled = true;
   vEls.status.textContent = "Extracting items...";
   vEls.status.hidden = false;
 
   const r = await fetch(`${apiBase}/api/v1/ingest/text`, {
     method: "POST",
-    headers: { "Content-Type":"application/json" },
+    headers: { "Content-Type":"application/json", "X-Device-Id": DEVICE_ID, "X-Correlation-Id": corr },
     body: JSON.stringify({ text }),
   });
 
@@ -512,6 +538,16 @@ async function extractItemsFromTranscript() {
   })));
   renderStaged();
   toast(`Staged ${extracted.length} items. Review in the staging area, then "Save Items to Pantry".`);
+
+  // Post UI timing (click -> staged items rendered)
+  try {
+    const dt = performance.now() - t0;
+    await fetch(`${apiBase}/api/v1/metrics/ui`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "extract_items_e2e", duration_ms: dt, user: DEVICE_ID, corr, extra: { count: extracted.length } }),
+    });
+  } catch (_) { /* ignore */ }
 }
 
 function updateRecordButton(rec) {

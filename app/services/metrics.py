@@ -26,7 +26,15 @@ class MetricsLogger:
         os.makedirs(self.settings.data_dir, exist_ok=True)
         self.path = os.path.join(self.settings.data_dir, filename)
 
-    def log_latency(self, name: str, duration_ms: float, origin: str, extra: Optional[Dict[str, Any]] = None) -> None:
+    def log_latency(
+        self,
+        name: str,
+        duration_ms: float,
+        origin: str,
+        extra: Optional[Dict[str, Any]] = None,
+        user_id: Optional[str] = None,
+        corr_id: Optional[str] = None,
+    ) -> None:
         entry = {
             "ts": datetime.utcnow().isoformat(),
             "kind": "latency",
@@ -34,6 +42,10 @@ class MetricsLogger:
             "origin": origin,
             "duration_ms": float(duration_ms),
         }
+        if user_id:
+            entry["user"] = user_id
+        if corr_id:
+            entry["corr"] = corr_id
         if extra:
             entry["extra"] = extra
         line = (json.dumps(entry, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
@@ -46,4 +58,3 @@ class MetricsLogger:
         except Exception:
             # Metrics should never impact user flows; swallow errors.
             pass
-
