@@ -20,6 +20,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi import Request
 
 from app.api.v1.ingest import router as ingest_router
+from app.api.v1.metrics import router as metrics_router
 
 
 # print("OPENAI_API_KEY from env:", os.getenv("OPENAI_API_KEY"))
@@ -47,6 +48,7 @@ def create_app() -> FastAPI:
     app.include_router(pantry_router)  
     app.include_router(suggest_router)
     app.include_router(ingest_router)
+    app.include_router(metrics_router)
 
     @app.get("/")
     def home(request: Request):

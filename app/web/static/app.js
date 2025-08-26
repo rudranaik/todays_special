@@ -284,6 +284,7 @@ async function mergeRows() {
 
 async function suggestRecipes(ev) {
   ev.preventDefault();
+  const t0 = performance.now();
   els.suggestBtn.disabled = true;
   const oldText = els.suggestBtn.textContent;
   els.suggestBtn.textContent = "Generating...";
@@ -313,6 +314,15 @@ async function suggestRecipes(ev) {
   els.suggestStatus.textContent = "Recipes ready";
   setTimeout(() => (els.suggestStatus.hidden = true), 3000);
   renderRecipes(body.recipes || []);
+  // Post UI timing (click -> render finished)
+  try {
+    const dt = performance.now() - t0;
+    await fetch(`${apiBase}/api/v1/metrics/ui`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "suggest_render", duration_ms: dt, extra: { count: (body.recipes || []).length } }),
+    });
+  } catch (_) { /* ignore */ }
 }
 
 function renderRecipes(recipes) {
@@ -419,6 +429,7 @@ function stopRecording() {
 
 async function uploadAndTranscribe(blob) {
   try {
+    const t0 = performance.now();
     vEls.status.textContent = "Transcribing...";
     vEls.status.hidden = false;
     const fd = new FormData();
@@ -441,6 +452,16 @@ async function uploadAndTranscribe(blob) {
     vEls.status.textContent = "Transcription complete";
     setTimeout(() => (vEls.status.hidden = true), 3000);
     vEls.extract.disabled = false;
+
+    // Post UI timing (upload start -> transcript ready)
+    try {
+      const dt = performance.now() - t0;
+      await fetch(`${apiBase}/api/v1/metrics/ui`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "transcribe_e2e", duration_ms: dt, extra: { size_bytes: blob.size } }),
+      });
+    } catch (_) { /* ignore */ }
 
   } catch (err) {
     toast(`Upload error: ${err.message || err}`, true);

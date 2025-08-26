@@ -5,6 +5,7 @@ import tempfile
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+import time
 from pydantic import BaseModel
 
 from app.config import Settings
@@ -13,6 +14,7 @@ from app.services.asr import WhisperASR
 from app.services.exceptions import ASRError, LLMError, RepoError
 from app.services.llm import OpenAIItemExtractor
 from app.services.repo.json_repo import JSONEventRepo
+from app.services.metrics import MetricsLogger
 
 router = APIRouter(tags=["ingest"])
 
@@ -44,6 +46,7 @@ async def transcribe(
     asr: WhisperASR = Depends(get_asr),
 ):
     # persist upload to a temp file for faster-whisper
+    logger = MetricsLogger()
     try:
         suffix = os.path.splitext(file.filename or "")[1] or ".webm"
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
@@ -54,7 +57,16 @@ async def transcribe(
         raise HTTPException(status_code=400, detail=f"Could not read upload: {e}")
 
     try:
+        t0 = time.perf_counter()
         transcript = asr.transcribe_file(tmp_path, language=language)
+        dt_ms = (time.perf_counter() - t0) * 1000.0
+        # best-effort log
+        logger.log_latency(
+            name="transcribe",
+            duration_ms=dt_ms,
+            origin="backend",
+            extra={"bytes": len(content or b""), "language": language or None},
+        )
     except ASRError as e:
         raise HTTPException(status_code=502, detail=str(e))
     finally:

@@ -5,6 +5,8 @@ from app.config import Settings
 from app.core.models import Pantry, SuggestConstraints, SuggestResponse, InventoryEvent
 from app.services.llm import OpenAIRecipeSuggester, SimpleRecipeSuggester
 from app.services.repo.json_repo import JSONPantryRepo, JSONEventRepo
+from app.services.metrics import MetricsLogger
+import time
 from app.services.exceptions import LLMError, RepoError
 
 router = APIRouter(tags=["suggestions"])
@@ -43,7 +45,24 @@ def suggest_recipes(
         raise HTTPException(status_code=500, detail=str(e))
 
     try:
+        t0 = time.perf_counter()
         recipes = suggester.suggest(pantry, constraints)
+        dt_ms = (time.perf_counter() - t0) * 1000.0
+        # best-effort latency log
+        try:
+            MetricsLogger().log_latency(
+                name="suggest_generate",
+                duration_ms=dt_ms,
+                origin="backend",
+                extra={"servings": constraints.servings, "has_constraints": any([
+                    constraints.time_minutes is not None,
+                    bool(constraints.mood),
+                    bool(constraints.diet_conditions),
+                    constraints.protein_goal_g is not None,
+                ])},
+            )
+        except Exception:
+            pass
     except LLMError as e:
         # Fallback to simple local suggester to avoid breaking the UI
         try:
