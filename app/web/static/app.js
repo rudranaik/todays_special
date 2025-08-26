@@ -1,7 +1,7 @@
 const apiBase = ""; // same-origin FastAPI app
 
 const els = {
-  tbody: document.getElementById("pantry-body"),
+  pantryItems: document.getElementById("pantry-items"),
   refresh: document.getElementById("refresh"),
   save: document.getElementById("save"),
   addRow: document.getElementById("add-row"),
@@ -13,7 +13,7 @@ const els = {
   suggestForm: document.getElementById("suggest-form"),
   suggestBtn: document.querySelector("#suggest-form button[type='submit']"),
   recipes: document.getElementById("recipes"),
-  stagedList: document.getElementById("staged-list"),
+  stagedItems: document.getElementById("staged-items"),
   pantryToggle: document.getElementById("pantry-toggle"),
   pantryContent: document.getElementById("pantry-content"),
   suggestStatus: document.getElementById("suggest-status"),
@@ -22,39 +22,77 @@ const els = {
 let localRows = []; // rows staged for merge
 
 function renderStaged() {
-  els.stagedList.innerHTML = "";
+  els.stagedItems.innerHTML = "";
   if (localRows.length === 0) {
-    els.stagedList.innerHTML = '<li class="muted">No items staged</li>';
+    els.stagedItems.innerHTML = '<div class="muted">No items staged</div>';
   } else {
-    localRows.forEach(r => {
-      const li = document.createElement("li");
-      li.textContent = `${r.name} — ${r.quantity || 0} ${r.unit || ""}`;
-      els.stagedList.appendChild(li);
+    localRows.forEach((r, i) => {
+      const itemEl = document.createElement("div");
+      itemEl.className = "pantry-item";
+      itemEl.innerHTML = `
+        <div class="pantry-item-details">
+          <input class="name" data-i="${i}" data-k="name" value="${r.name}"/>
+          <div class="quantity-unit">
+            <input type="number" min="0" step="0.01" data-i="${i}" data-k="quantity" value="${r.quantity ?? 0}"/>
+            <input data-i="${i}" data-k="unit" value="${r.unit ?? ""}"/>
+          </div>
+        </div>
+        <button class="delete-btn" data-del="${i}">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+        </button>
+      `;
+      els.stagedItems.appendChild(itemEl);
     });
   }
+
+  els.stagedItems.querySelectorAll("input").forEach(inp => {
+    inp.addEventListener("change", () => {
+      const i = Number(inp.dataset.i), k = inp.dataset.k;
+      let v = inp.value;
+      if (k === "quantity") v = Number(v);
+      localRows[i][k] = v;
+    });
+  });
+
+  els.stagedItems.querySelectorAll(".delete-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const i = Number(btn.dataset.del);
+      localRows.splice(i, 1);
+      renderStaged();
+    });
+  });
+
   els.mergeRows.disabled = localRows.length === 0;
 }
 
 function toast(msg, isError=false) {
   els.toast.textContent = msg;
-  els.toast.hidden = false;
   els.toast.classList.toggle("error", isError);
-  setTimeout(() => { els.toast.hidden = true; }, 3500);
+  els.toast.classList.add("show");
+  setTimeout(() => { els.toast.classList.remove("show"); }, 5000);
 }
 
 function renderPantry(items) {
-  els.tbody.innerHTML = "";
+  els.pantryItems.innerHTML = "";
   items.forEach((it, idx) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td><input data-i="${idx}" data-k="name" value="${it.name}"/></td>
-      <td><input type="number" min="0" step="0.01" data-i="${idx}" data-k="quantity" value="${it.quantity ?? 0}"/></td>
-      <td><input data-i="${idx}" data-k="unit" value="${it.unit ?? ""}"/></td>
-      <td><button class="danger" data-del="${idx}">Delete</button></td>`;
-    els.tbody.appendChild(tr);
+    const itemEl = document.createElement("div");
+    itemEl.className = "pantry-item";
+    itemEl.innerHTML = `
+      <div class="pantry-item-details">
+        <input class="name" data-i="${idx}" data-k="name" value="${it.name}"/>
+        <div class="quantity-unit">
+          <input type="number" min="0" step="0.01" data-i="${idx}" data-k="quantity" value="${it.quantity ?? 0}"/>
+          <input data-i="${idx}" data-k="unit" value="${it.unit ?? ""}"/>
+        </div>
+      </div>
+      <button class="delete-btn" data-del="${idx}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+      </button>
+    `;
+    els.pantryItems.appendChild(itemEl);
   });
 
-  els.tbody.querySelectorAll("input").forEach(inp => {
+  els.pantryItems.querySelectorAll("input").forEach(inp => {
     inp.addEventListener("change", () => {
       const i = Number(inp.dataset.i), k = inp.dataset.k;
       let v = inp.value;
@@ -63,7 +101,7 @@ function renderPantry(items) {
     });
   });
 
-  els.tbody.querySelectorAll("button[data-del]").forEach(btn => {
+  els.pantryItems.querySelectorAll(".delete-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const i = Number(btn.dataset.del);
       current.items.splice(i, 1);
@@ -134,9 +172,8 @@ async function mergeRows() {
     toast(body.detail || "Merge failed", true);
     return;
   }
-  current = body;
-  renderPantry(current.items);
   toast("Merged into pantry");
+  await loadPantry();
   renderStaged();
 }
 
@@ -226,10 +263,9 @@ let mediaRecorder = null;
 let recordedChunks = [];
 const vEls = {
   toggle: document.getElementById("rec-toggle"),
-  lang: document.getElementById("rec-lang"),
   audio: document.getElementById("rec-audio"),
   transcript: document.getElementById("rec-transcript"),
-  merge: document.getElementById("rec-merge"),
+  extract: document.getElementById("rec-extract"),
   status: document.getElementById("transcribe-status"),
 };
 
@@ -253,7 +289,7 @@ async function startRecording() {
       const blob = new Blob(recordedChunks, { type: mime || "audio/webm" });
       vEls.audio.src = URL.createObjectURL(blob);
       vEls.audio.hidden = false;
-      uploadAndExtract(blob);
+      uploadAndTranscribe(blob);
     };
 
     mediaRecorder.start(100); // gather chunks every 100ms
@@ -276,23 +312,21 @@ function stopRecording() {
   }
 }
 
-async function uploadAndExtract(blob) {
+async function uploadAndTranscribe(blob) {
   try {
     vEls.status.textContent = "Transcribing...";
     vEls.status.hidden = false;
     const fd = new FormData();
     fd.append("file", blob, "note.webm");
-    const lang = (vEls.lang.value || "").trim();
-    if (lang) fd.append("language", lang);
 
-    const r = await fetch(`${apiBase}/api/voice/transcribe_extract`, {
+    const r = await fetch(`${apiBase}/api/v1/ingest/transcribe`, {
       method: "POST",
       body: fd,
     });
 
     const body = await r.json().catch(() => ({}));
     if (!r.ok) {
-      toast(body.detail || "Transcribe/Extract failed", true);
+      toast(body.detail || "Transcribe failed", true);
       vEls.status.textContent = "Transcription failed";
       setTimeout(() => (vEls.status.hidden = true), 3000);
       return;
@@ -301,25 +335,8 @@ async function uploadAndExtract(blob) {
     vEls.transcript.value = body.transcript || "";
     vEls.status.textContent = "Transcription complete";
     setTimeout(() => (vEls.status.hidden = true), 3000);
-    const extracted = Array.isArray(body.items) ? body.items : [];
+    vEls.extract.disabled = false;
 
-    if (extracted.length === 0) {
-      toast("No items extracted from voice.");
-      vEls.merge.disabled = true;
-      return;
-    }
-
-    // stage into localRows for review, not directly into pantry
-    localRows.push(...extracted.map((i) => ({
-      name: i.name,
-      quantity: Number(i.quantity || 0),
-      unit: i.unit || null,
-    })));
-    renderStaged();
-
-    // show a toast and enable Merge button
-    toast(`Staged ${extracted.length} items from voice. Review in the staging area, then "Save Items to Pantry".`);
-    vEls.merge.disabled = false;
   } catch (err) {
     toast(`Upload error: ${err.message || err}`, true);
     vEls.status.textContent = "Transcription failed";
@@ -327,9 +344,52 @@ async function uploadAndExtract(blob) {
   }
 }
 
+async function extractItemsFromTranscript() {
+  const text = vEls.transcript.value.trim();
+  if (!text) {
+    toast("No transcript to extract from", true);
+    return;
+  }
+
+  vEls.extract.disabled = true;
+  vEls.status.textContent = "Extracting items...";
+  vEls.status.hidden = false;
+
+  const r = await fetch(`${apiBase}/api/v1/ingest/text`, {
+    method: "POST",
+    headers: { "Content-Type":"application/json" },
+    body: JSON.stringify({ text }),
+  });
+
+  const body = await r.json().catch(() => ({}));
+  vEls.extract.disabled = false;
+  vEls.status.textContent = "Extraction complete";
+  setTimeout(() => (vEls.status.hidden = true), 3000);
+
+  if (!r.ok) {
+    toast(body.detail || "Extraction failed", true);
+    return;
+  }
+
+  const extracted = Array.isArray(body.items) ? body.items : [];
+
+  if (extracted.length === 0) {
+    toast("No items extracted from text.");
+    return;
+  }
+
+  localRows.push(...extracted.map((i) => ({
+    name: i.name,
+    quantity: Number(i.quantity || 0),
+    unit: i.unit || null,
+  })));
+  renderStaged();
+  toast(`Staged ${extracted.length} items. Review in the staging area, then "Save Items to Pantry".`);
+}
+
 function updateRecordButton(rec) {
   if (rec) {
-    vEls.toggle.textContent = "Stop & Extract";
+    vEls.toggle.textContent = "Stop & Transcribe";
     vEls.toggle.classList.add("recording");
   } else {
     vEls.toggle.textContent = "Start Recording";
@@ -346,8 +406,4 @@ function toggleRecording() {
 }
 
 vEls.toggle?.addEventListener("click", toggleRecording);
-vEls.merge?.addEventListener("click", async () => {
-  // Reuse existing mergeRows (it consumes localRows and merges into pantry)
-  await mergeRows();
-  vEls.merge.disabled = true;
-});
+vEls.extract?.addEventListener("click", extractItemsFromTranscript);

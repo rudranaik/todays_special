@@ -12,7 +12,7 @@
 
 <section class="card" id="recipes-section">
   <div class="card-header">
-    <h2>Suggest Recipes</h2>
+    <h2>Suggest recipes</h2>
   </div>
   <form id="suggest-form">
     <div class="row">
@@ -45,14 +45,7 @@
       <button id="save" class="primary">Replace Pantry</button>
     </div>
 
-    <table id="pantry-table">
-      <thead>
-        <tr><th>Name</th><th>Qty</th><th>Unit</th><th></th></tr>
-      </thead>
-      <tbody id="pantry-body">
-        <!-- rows filled by JS -->
-      </tbody>
-    </table>
+    <div id="pantry-items"></div>
 
     <div class="row add-item-form">
       <input id="new-name" placeholder="e.g., Tomatoes" />
@@ -65,7 +58,7 @@
 
 <section id="voice" class="card">
   <div class="card-header">
-    <h2>Voice Ingest</h2>
+    <h2>Narrate your ingredients</h2>
   </div>
   <div class="row">
     <button id="rec-toggle">Start Recording</button>
@@ -83,15 +76,15 @@
     <textarea id="rec-transcript" rows="3" placeholder="Transcript will appear here..." style="width:100%;"></textarea>
   </div>
   <div class="row">
-    <button id="rec-merge" disabled>Merge Extracted Items to Pantry</button>
+    <button id="rec-extract" disabled>Extract Items</button>
   </div>
 </section>
 
 <section id="staging" class="card">
   <div class="card-header">
-    <h2>Staging Area</h2>
+    <h2>Do these look right?</h2>
   </div>
-  <ul id="staged-list"></ul>
+  <div id="staged-items"></div>
   <div class="row">
     <button id="merge-rows" class="primary" disabled>Save Items to Pantry</button>
   </div>

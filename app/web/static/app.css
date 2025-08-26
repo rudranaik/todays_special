@@ -84,6 +84,7 @@ textarea {
   border-radius: 8px;
   padding: 10px 12px;
   transition: border-color 0.2s;
+  width: 100%;
 }
 
 input:focus,
@@ -250,4 +251,95 @@ td:last-child {
 .add-item-form {
   margin-top: 16px;
   align-items: center;
+}
+
+/* Pantry Item Card */
+.pantry-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.pantry-item-details {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.pantry-item .name {
+  font-weight: 600;
+  width: 100%;
+}
+
+.pantry-item .quantity-unit {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.pantry-item input {
+  width: auto;
+  flex-grow: 1;
+}
+
+.pantry-item .delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  padding: 8px;
+}
+
+.pantry-item .delete-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Toast Notification */
+.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  padding: 16px 20px;
+  border-radius: 8px;
+  max-width: 340px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 1000;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Responsive Pantry */
+@media (min-width: 600px) {
+  .pantry-item {
+    flex-wrap: nowrap;
+  }
+
+  .pantry-item .name {
+    width: 40%;
+  }
+
+  .pantry-item .quantity-unit {
+    width: 40%;
+    margin-top: 0;
+  }
+
+  .pantry-item .delete-btn {
+    width: auto;
+  }
 }
