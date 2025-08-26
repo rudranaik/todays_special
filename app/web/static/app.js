@@ -346,6 +346,45 @@ async function suggestRecipes(ev) {
   } catch (_) { /* ignore */ }
 }
 
+function recipeToPlainText(r) {
+  const ing = (r.ingredients || []).map(i => `- ${i.name}${(i.quantity || 0) ? ` — ${i.quantity} ${i.unit || ""}` : ""}`).join("\n");
+  const steps = (r.steps || []).map((s, i) => `${i + 1}. ${s}`).join("\n");
+  const tags = (r.tags || []).join(", ");
+  const meta = `~${r.est_time_minutes ?? "?"} min • ${r.est_kcal ?? "?"} kcal • ${r.est_protein_g ?? "?"} g protein`;
+  return `${r.title}\n${tags ? `Tags: ${tags}\n` : ""}${meta}\n\nIngredients:\n${ing}\n\nSteps:\n${steps}`;
+}
+
+async function saveFavorite(recipe, btnEl) {
+  try {
+    const resp = await fetch(`${apiBase}/api/v1/favorites`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Device-Id": DEVICE_ID },
+      body: JSON.stringify(recipe),
+    });
+    if (!resp.ok) {
+      const body = await resp.json().catch(() => ({}));
+      throw new Error(body.detail || "Save to favorites failed");
+    }
+    toast("Saved to favorites");
+    if (btnEl) {
+      btnEl.textContent = "Saved to favorites";
+      btnEl.disabled = true;
+      btnEl.classList.remove("primary");
+    }
+  } catch (e) {
+    toast(e.message || String(e), true);
+  }
+}
+
+async function copyRecipe(recipe) {
+  try {
+    await navigator.clipboard.writeText(recipeToPlainText(recipe));
+    toast("Recipe copied to clipboard");
+  } catch (e) {
+    toast("Copy failed", true);
+  }
+}
+
 function renderRecipes(recipes) {
   els.recipes.innerHTML = "";
   if (!recipes.length) {
@@ -370,18 +409,27 @@ function renderRecipes(recipes) {
         <ol>${steps}</ol>
       </details>
       <div class="tags">~${r.est_time_minutes ?? "?"} min • ${r.est_kcal ?? "?"} kcal • ${r.est_protein_g ?? "?"} g protein</div>
+      <div class="row">
+        <button class="copy-btn">Copy recipe</button>
+        <button class="fav-btn primary">Save to Favorites</button>
+      </div>
     `;
     els.recipes.appendChild(div);
+
+    // Wire buttons
+    div.querySelector(".copy-btn")?.addEventListener("click", () => copyRecipe(r));
+    const favBtn = div.querySelector(".fav-btn");
+    favBtn?.addEventListener("click", () => saveFavorite(r, favBtn));
   });
 }
 
 // wire up
-els.refresh.addEventListener("click", loadPantry);
-els.save.addEventListener("click", replacePantry);
-els.addRow.addEventListener("click", addLocalRow);
-els.mergeRows.addEventListener("click", mergeRows);
-els.suggestForm.addEventListener("submit", suggestRecipes);
-els.pantryToggle.addEventListener("click", () => {
+els.refresh?.addEventListener("click", loadPantry);
+els.save?.addEventListener("click", replacePantry);
+els.addRow?.addEventListener("click", addLocalRow);
+els.mergeRows?.addEventListener("click", mergeRows);
+els.suggestForm?.addEventListener("submit", suggestRecipes);
+els.pantryToggle?.addEventListener("click", () => {
   const hidden = els.pantryContent.hidden;
   els.pantryContent.hidden = !hidden;
   els.pantryToggle.classList.toggle("collapsed", !hidden);
@@ -390,9 +438,11 @@ els.pantryToggle.addEventListener("click", () => {
 // expose time/servings ids
 els.time = document.getElementById("time");
 
-// initial load
-loadPantry();
-renderStaged();
+// initial load for pantry page
+if (els.pantryItems) {
+  loadPantry();
+  renderStaged();
+}
 
 // ---------------- Voice Ingest ----------------
 let mediaRecorder = null;
@@ -405,7 +455,7 @@ const vEls = {
   status: document.getElementById("transcribe-status"),
 };
 
-updateRecordButton(false);
+if (vEls.toggle) updateRecordButton(false);
 
 async function startRecording() {
   try {
@@ -551,6 +601,7 @@ async function extractItemsFromTranscript() {
 }
 
 function updateRecordButton(rec) {
+  if (!vEls.toggle) return;
   if (rec) {
     vEls.toggle.textContent = "Stop & Transcribe";
     vEls.toggle.classList.add("recording");
@@ -570,3 +621,75 @@ function toggleRecording() {
 
 vEls.toggle?.addEventListener("click", toggleRecording);
 vEls.extract?.addEventListener("click", extractItemsFromTranscript);
+
+// --------------- Favorites page ---------------
+const favListEl = document.getElementById("favorites");
+
+async function removeFavorite(id) {
+  try {
+    const resp = await fetch(`${apiBase}/api/v1/favorites/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { "X-Device-Id": DEVICE_ID },
+    });
+    if (!resp.ok) {
+      const b = await resp.json().catch(() => ({}));
+      throw new Error(b.detail || "Remove failed");
+    }
+    await loadFavorites();
+  } catch (e) {
+    toast(e.message || String(e), true);
+  }
+}
+
+function renderFavorites(recipes) {
+  if (!favListEl) return;
+  favListEl.innerHTML = "";
+  if (!recipes.length) {
+    favListEl.innerHTML = `<p class="muted">No favorites yet. Save recipes you like to see them here.</p>`;
+    return;
+  }
+  recipes.forEach(r => {
+    const div = document.createElement("div");
+    div.className = "recipe";
+    const tags = (r.tags || []).join(" • ");
+    const steps = (r.steps || []).map(s => `<li>${s}</li>`).join("");
+    const ing = (r.ingredients || []).map(i => `<li>${i.name} — ${i.quantity || 0} ${i.unit || ""}</li>`).join("");
+    div.innerHTML = `
+      <h3>${r.title}</h3>
+      <div class="tags">${tags}</div>
+      <details>
+        <summary>Ingredients</summary>
+        <ul>${ing}</ul>
+      </details>
+      <details>
+        <summary>Steps</summary>
+        <ol>${steps}</ol>
+      </details>
+      <div class="tags">~${r.est_time_minutes ?? "?"} min • ${r.est_kcal ?? "?"} kcal • ${r.est_protein_g ?? "?"} g protein</div>
+      <div class="row">
+        <button class="copy-btn">Copy recipe</button>
+        <button class="remove-fav-btn">Remove</button>
+      </div>
+    `;
+    favListEl.appendChild(div);
+    div.querySelector(".copy-btn")?.addEventListener("click", () => copyRecipe(r));
+    div.querySelector(".remove-fav-btn")?.addEventListener("click", () => removeFavorite(r.id));
+  });
+}
+
+async function loadFavorites() {
+  if (!favListEl) return;
+  try {
+    const resp = await fetch(`${apiBase}/api/v1/favorites`, { headers: { "X-Device-Id": DEVICE_ID } });
+    const body = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(body.detail || "Failed to load favorites");
+    renderFavorites(body.recipes || []);
+  } catch (e) {
+    renderFavorites([]);
+    toast(e.message || String(e), true);
+  }
+}
+
+if (favListEl) {
+  loadFavorites();
+}

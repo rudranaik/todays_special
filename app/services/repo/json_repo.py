@@ -7,7 +7,7 @@ import tempfile
 from contextlib import contextmanager
 from typing import Iterator
 
-from app.core.models import Pantry, Item, InventoryEvent
+from app.core.models import Pantry, Item, InventoryEvent, Recipe
 from app.services.exceptions import RepoError
 from app.config import Settings
 from datetime import datetime
@@ -104,3 +104,57 @@ class JSONEventRepo:
                 os.fsync(f.fileno())
         except Exception as e:
             raise RepoError(f"Failed to append event to {self.path}: {e}") from e
+
+
+class JSONFavoritesRepo:
+    """Stores favorites per device as JSON arrays under data/favorites/.
+
+    File layout: data/favorites/<device_id>.json with shape {"recipes": [Recipe, ...]}
+    """
+    def __init__(self, settings: Settings):
+        self.base_dir = os.path.join(settings.data_dir, "favorites")
+
+    def _safe_id(self, device_id: str) -> str:
+        # keep alnum, dash, underscore only
+        return "".join(c for c in device_id if c.isalnum() or c in ("-", "_")) or "unknown"
+
+    def _path(self, device_id: str) -> str:
+        did = self._safe_id(device_id)
+        return os.path.join(self.base_dir, f"{did}.json")
+
+    def load(self, device_id: str) -> list[Recipe]:
+        path = self._path(device_id)
+        try:
+            if not os.path.exists(path):
+                return []
+            with _locked(path) as f:
+                f.seek(0)
+                raw = f.read() or b"{}"
+            obj = json.loads(raw.decode("utf-8"))
+            recs = [Recipe(**r) for r in obj.get("recipes", [])]
+            return recs
+        except Exception as e:
+            raise RepoError(f"Failed to load favorites from {path}: {e}") from e
+
+    def save(self, device_id: str, recipes: list[Recipe]) -> None:
+        path = self._path(device_id)
+        try:
+            payload = json.dumps({"recipes": [r.dict() for r in recipes]},
+                                 ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+            _atomic_write(path, payload)
+        except Exception as e:
+            raise RepoError(f"Failed to save favorites to {path}: {e}") from e
+
+    def add(self, device_id: str, recipe: Recipe) -> None:
+        recs = self.load(device_id)
+        by_id = {r.id: r for r in recs}
+        by_id[recipe.id] = recipe
+        self.save(device_id, list(by_id.values()))
+
+    def remove(self, device_id: str, recipe_id: str) -> bool:
+        recs = self.load(device_id)
+        new_recs = [r for r in recs if r.id != recipe_id]
+        changed = len(new_recs) != len(recs)
+        if changed:
+            self.save(device_id, new_recs)
+        return changed

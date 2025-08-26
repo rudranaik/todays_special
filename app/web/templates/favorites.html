@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block nav %}
+  <a href="/">Home</a>
+  <a href="/favorites">Favorites</a>
+{% endblock %}
+
+{% block content %}
+<section class="card" id="favorites-section">
+  <div class="card-header">
+    <h2>Your Favorite Recipes</h2>
+  </div>
+  <div id="favorites" class="recipes"></div>
+  <section id="toast" class="toast" hidden></section>
+</section>
+{% endblock %}
+
