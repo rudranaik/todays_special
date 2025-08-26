@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     # CORS (to wire later in main app)
     cors_allow_origins: List[str] = Field(default_factory=lambda: ["http://127.0.0.1:8001"])
 
+    # Server Configuration
+    port: int = Field(8000, env="PORT")
+    web_concurrency: int = Field(4, env="WEB_CONCURRENCY")
+    timeout: int = Field(60, env="TIMEOUT")
+    log_level: str = Field("info", env="LOG_LEVEL")
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
