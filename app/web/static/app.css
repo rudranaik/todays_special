@@ -266,10 +266,13 @@ td:last-child {
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
+/* allow shrink within details column */
 .pantry-item-details {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  min-width: 0; /* important: let children shrink instead of overflowing */
+  gap: 8px;
 }
 
 .pantry-item .name {
@@ -282,11 +285,14 @@ td:last-child {
   gap: 8px;
   align-items: center;
   margin-top: 8px;
+  flex-wrap: wrap;  /* allow wrapping on narrow screens */
+  min-width: 0;    /* allow flex children to shrink */
 }
 
 .pantry-item input {
   width: auto;
-  flex-grow: 1;
+  flex: 1 1 0;
+  min-width: 0; /* allow shrinking in flex layouts */
 }
 
 .pantry-item .delete-btn {
@@ -328,18 +334,65 @@ td:last-child {
 @media (min-width: 600px) {
   .pantry-item {
     flex-wrap: nowrap;
+    align-items: center;
   }
 
+  /* name should grow and fill available space */
   .pantry-item .name {
-    width: 40%;
+    flex: 1 1 auto;
+    width: auto;       /* remove fixed 40% */
   }
 
+  /* quantity+unit should also grow and stay side-by-side */
   .pantry-item .quantity-unit {
-    width: 40%;
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    gap: 8px;
     margin-top: 0;
+    min-width: 0;      /* allows shrinking instead of overflow */
+  }
+
+  .pantry-item .quantity-unit > input,
+  .pantry-item .quantity-unit > select {
+    min-width: 0;      /* prevent inputs from forcing overflow */
   }
 
   .pantry-item .delete-btn {
+    flex: 0 0 auto;    /* fixed size, doesn’t stretch */
     width: auto;
   }
+}
+
+
+/* Better sizing for quantity/unit fields */
+.pantry-item .quantity-unit input[type="number"] {
+  flex: 0 1 110px; /* keep quantity reasonably compact but shrinkable */
+  min-width: 0;    /* was 100% — caused overflow on small screens */
+}
+
+.pantry-item .quantity-unit input:not([type="number"]) {
+  flex: 1 1 140px; /* unit can grow */
+  min-width: 0;    /* allow shrinking to avoid spillover */
+}
+
+/* Add-item form: responsive layout */
+.add-item-form {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 8px;
+}
+
+@media (max-width: 599px) {
+  .add-item-form {
+    grid-template-columns: 1fr;
+  }
+  .add-item-form button {
+    width: 100%;
+  }
+
+  /* Mobile tweaks to avoid overflow */
+  .pantry-item { align-items: flex-start; }
+  .pantry-item .name { width: 100%; }
+  .pantry-item .quantity-unit { width: 100%; }
 }

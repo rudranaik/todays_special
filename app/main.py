@@ -58,6 +58,12 @@ def create_app() -> FastAPI:
     # Static files & templates
     app.mount("/static", StaticFiles(directory="app/web/static"), name="static")
     templates = Jinja2Templates(directory="app/web/templates")
+    # Ensure template edits are reflected without restart in dev
+    try:
+        templates.env.auto_reload = True
+        templates.env.cache = {}  # disable template bytecode cache in dev
+    except Exception:
+        pass
 
     @app.get("/readyz")
     def readyz():
