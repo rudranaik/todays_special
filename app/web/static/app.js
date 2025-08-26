@@ -21,6 +21,32 @@ const els = {
 
 let localRows = []; // rows staged for merge
 
+// ---- Category grouping config ----
+const CATEGORY_ORDER = [
+  "Grains & Cereals",
+  "Legumes & Pulses",
+  "Vegetables - Leafy greens",
+  "Vegetables - Root & tubers",
+  "Vegetables - Cruciferous",
+  "Vegetables - Others",
+  "Fruits",
+  "Herbs & Spices",
+  "Oils & Fats",
+  "Dairy & Alternatives",
+  "Meat & Poultry",
+  "Seafood",
+  "Eggs",
+  "Nuts & Seeds",
+  "Condiments & Sauces",
+  "Sweeteners",
+  "Baking & Essentials",
+  "Snacks & Miscellaneous",
+  "Uncategorized",
+];
+const collapseState = new Map(); // category -> collapsed?
+function isCollapsed(cat) { return collapseState.get(cat) === true; }
+function toggleCollapsed(cat) { collapseState.set(cat, !isCollapsed(cat)); }
+
 function renderStaged() {
   els.stagedItems.innerHTML = "";
   if (localRows.length === 0) {
@@ -72,7 +98,7 @@ function toast(msg, isError=false) {
   setTimeout(() => { els.toast.classList.remove("show"); }, 5000);
 }
 
-function renderPantry(items) {
+function renderPantryOld(items) {
   els.pantryItems.innerHTML = "";
   items.forEach((it, idx) => {
     const itemEl = document.createElement("div");
@@ -107,6 +133,85 @@ function renderPantry(items) {
       current.items.splice(i, 1);
       renderPantry(current.items);
       await replacePantry();
+    });
+  });
+}
+
+// New grouped pantry renderer
+function itemRowHTML(it, idx) {
+  return `
+    <div class="pantry-item">
+      <div class="pantry-item-details">
+        <input class="name" data-i="${idx}" data-k="name" value="${it.name}"/>
+        <div class="quantity-unit">
+          <input type="number" min="0" step="0.01" data-i="${idx}" data-k="quantity" value="${it.quantity ?? 0}"/>
+          <input data-i="${idx}" data-k="unit" value="${it.unit ?? ""}"/>
+        </div>
+      </div>
+      <button class="delete-btn" data-del="${idx}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+      </button>
+    </div>
+  `;
+}
+
+function renderPantry(items) {
+  els.pantryItems.innerHTML = "";
+  const pairs = items.map((it, idx) => ({ it, idx }));
+  const groups = new Map();
+  for (const p of pairs) {
+    let cat = p.it.category || "Uncategorized";
+    if (!groups.has(cat)) groups.set(cat, []);
+    groups.get(cat).push(p);
+  }
+  const orderedCats = CATEGORY_ORDER.filter(c => groups.has(c));
+  for (const cat of orderedCats) {
+    const section = document.createElement('section');
+    section.className = 'pantry-group';
+    section.dataset.cat = cat;
+    const collapsed = isCollapsed(cat);
+    section.innerHTML = `
+      <div class="pantry-group-header">
+        <h3>${cat}</h3>
+        <button class="icon-button group-toggle" aria-label="Toggle ${cat}" data-cat="${cat}">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+        </button>
+      </div>
+      <div class="pantry-group-body" ${collapsed ? 'hidden' : ''}></div>
+    `;
+    const body = section.querySelector('.pantry-group-body');
+    for (const {it, idx} of groups.get(cat)) {
+      body.insertAdjacentHTML('beforeend', itemRowHTML(it, idx));
+    }
+    els.pantryItems.appendChild(section);
+  }
+
+  els.pantryItems.querySelectorAll("input").forEach(inp => {
+    inp.addEventListener("change", () => {
+      const i = Number(inp.dataset.i), k = inp.dataset.k;
+      let v = inp.value;
+      if (k === "quantity") v = Number(v);
+      current.items[i][k] = v;
+    });
+  });
+
+  els.pantryItems.querySelectorAll(".delete-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const i = Number(btn.dataset.del);
+      current.items.splice(i, 1);
+      renderPantry(current.items);
+      await replacePantry();
+    });
+  });
+
+  els.pantryItems.querySelectorAll('.group-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cat = btn.dataset.cat;
+      toggleCollapsed(cat);
+      const sec = btn.closest('.pantry-group');
+      const body = sec.querySelector('.pantry-group-body');
+      const nowHidden = body.hasAttribute('hidden');
+      if (nowHidden) body.removeAttribute('hidden'); else body.setAttribute('hidden','');
     });
   });
 }
@@ -382,6 +487,7 @@ async function extractItemsFromTranscript() {
     name: i.name,
     quantity: Number(i.quantity || 0),
     unit: i.unit || null,
+    category: i.category || null,
   })));
   renderStaged();
   toast(`Staged ${extracted.length} items. Review in the staging area, then "Save Items to Pantry".`);

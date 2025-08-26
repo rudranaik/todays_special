@@ -14,6 +14,7 @@ class Item(BaseModel):
     name: str = Field(..., min_length=1, description="Display name of the item")
     quantity: float = Field(0, ge=0, description="Non-negative quantity")
     unit: Optional[str] = Field(None, description="Normalized unit, e.g., 'g', 'kg', 'ml', 'cup'")
+    category: Optional[str] = Field(None, description="High-level category, e.g., 'Grains & Cereals'")
     confidence: Optional[float] = Field(None, ge=0, le=1, description="0.0–1.0 confidence of extraction")
     notes: Optional[str] = None
 

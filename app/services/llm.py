@@ -41,14 +41,40 @@ class OpenAIItemExtractor(ItemExtractor):
 
     def extract(self, transcript: str) -> List[Item]:
         """
-        Ask the model to return a structured JSON list of items with (name, quantity?, unit?).
+        Extract items as JSON with optional category from a fixed set.
         """
         try:
             # Use responses API with JSON schema if you prefer; keeping it simple here.
+            categories = [
+                "Grains & Cereals",
+                "Legumes & Pulses",
+                "Vegetables - Leafy greens",
+                "Vegetables - Root & tubers",
+                "Vegetables - Cruciferous",
+                "Vegetables - Others",
+                "Fruits",
+                "Herbs & Spices",
+                "Oils & Fats",
+                "Dairy & Alternatives",
+                "Meat & Poultry",
+                "Seafood",
+                "Eggs",
+                "Nuts & Seeds",
+                "Condiments & Sauces",
+                "Sweeteners",
+                "Baking & Essentials",
+                "Snacks & Miscellaneous",
+            ]
+            allowed = ", ".join(categories)
             prompt = (
-                "Extract grocery items from the transcript. Know that the transcript can be in multiple languages."
-                "If you are not sure about the quantity, set it to 1. Make best attempts to guess the ingredient if unclear, but don't hallucinate."
-                "Return ONLY valid JSON: [{\"name\": str, \"quantity\": number?, \"unit\": str?}].\n"
+                "Extract grocery/pantry items from this transcript (may be multilingual). "
+                "If unsure about quantity, set it to 1. Do not invent items. "
+                "Return ONLY a strict JSON array where each item is: "
+                '{"name": str, "quantity"?: number, "unit"?: str, "category"?: str}. '
+                "If you can classify the item, set 'category' to one of these exactly: "
+                f"{allowed}. Otherwise omit category.\n\n"
+                "Examples: spinach -> 'Vegetables - Leafy greens'; potatoes -> 'Vegetables - Root & tubers'; "
+                "chili powder -> 'Herbs & Spices'; olive oil -> 'Oils & Fats'; basmati rice -> 'Grains & Cereals'.\n\n"
                 f"Transcript:\n{transcript}"
             )
             resp = self._client.chat.completions.create(
@@ -65,6 +91,7 @@ class OpenAIItemExtractor(ItemExtractor):
                     name=row["name"],
                     quantity=float(row.get("quantity") or 0),
                     unit=row.get("unit"),
+                    category=row.get("category"),
                 ))
             return items
         except Exception as e:

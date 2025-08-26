@@ -396,3 +396,27 @@ td:last-child {
   .pantry-item .name { width: 100%; }
   .pantry-item .quantity-unit { width: 100%; }
 }
+
+/* Pantry groups */
+.pantry-group {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  background: var(--card-bg);
+}
+
+.pantry-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px 0 8px;
+}
+
+.pantry-group-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.pantry-group-body {
+  padding: 8px;
+}
