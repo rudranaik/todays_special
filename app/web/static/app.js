@@ -211,7 +211,7 @@ els.suggestForm.addEventListener("submit", suggestRecipes);
 els.pantryToggle.addEventListener("click", () => {
   const hidden = els.pantryContent.hidden;
   els.pantryContent.hidden = !hidden;
-  els.pantryToggle.textContent = hidden ? "Hide" : "Show";
+  els.pantryToggle.classList.toggle("collapsed", !hidden);
 });
 
 // expose time/servings ids

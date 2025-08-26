@@ -1,52 +1,72 @@
 {% extends "base.html" %}
 
 {% block nav %}
+  <a href="#recipes-section">Recipes</a>
   <a href="#pantry">Pantry</a>
   <a href="#voice">Voice Ingest</a>
-  <a href="#recipes-section">Recipes</a>
 {% endblock %}
 
 {% block content %}
 
-<section id="pantry" class="card">
-  <div class="row">
-    <h1><b>Pantry</b></h1>
-    <button id="pantry-toggle">Hide</button>
-  </div>
-  <div id="pantry-content">
-  <div id="pantry-controls">
-    <button id="refresh">Refresh</button>
-    <button id="save">Replace Pantry</button>
-  </div>
+<body class="redesigned">
 
-  <table id="pantry-table">
-    <thead>
-      <tr><th>Name</th><th>Qty</th><th>Unit</th><th></th></tr>
-    </thead>
-    <tbody id="pantry-body">
-      <!-- rows filled by JS -->
-    </tbody>
-  </table>
-
-  <div class="row">
-    <input id="new-name" placeholder="e.g., Tomatoes" />
-    <input id="new-qty" type="number" min="0" step="0.01" placeholder="Qty" />
-    <input id="new-unit" placeholder="Unit (g, ml, cup, piece)" />
-    <button id="add-row">Add</button>
+<section class="card" id="recipes-section">
+  <div class="card-header">
+    <h2>Suggest Recipes</h2>
   </div>
-  </div>
+  <form id="suggest-form">
+    <div class="row">
+      <label>Time (minutes) <input type="number" id="time" min="0" /></label>
+      <label>Servings <input type="number" id="servings" min="1" value="1" /></label>
+    </div>
+    <div class="row">
+      <label>Mood <input id="mood" placeholder="light, comforting, spicy" /></label>
+      <label>Diet (comma-separated) <input id="diet" placeholder="vegetarian, gluten-free" /></label>
+    </div>
+    <div class="row">
+      <label>Protein goal (g) <input type="number" id="protein" min="0" step="1" /></label>
+    </div>
+    <button type="submit" class="primary">Suggest</button>
+  </form>
+  <div id="suggest-status" class="status" hidden></div>
+  <div id="recipes"></div>
 </section>
 
-<section id="staging" class="card">
-  <h1><b>Staging Area</b></h1>
-  <ul id="staged-list"></ul>
-  <div class="row">
-    <button id="merge-rows" disabled>Save Items to Pantry</button>
+<section id="pantry" class="card">
+  <div class="card-header">
+    <h2>Pantry</h2>
+    <button id="pantry-toggle" class="icon-button" aria-label="Collapse pantry">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-up"><polyline points="18 15 12 9 6 15"></polyline></svg>
+    </button>
+  </div>
+  <div id="pantry-content">
+    <div id="pantry-controls">
+      <button id="refresh">Refresh</button>
+      <button id="save" class="primary">Replace Pantry</button>
+    </div>
+
+    <table id="pantry-table">
+      <thead>
+        <tr><th>Name</th><th>Qty</th><th>Unit</th><th></th></tr>
+      </thead>
+      <tbody id="pantry-body">
+        <!-- rows filled by JS -->
+      </tbody>
+    </table>
+
+    <div class="row add-item-form">
+      <input id="new-name" placeholder="e.g., Tomatoes" />
+      <input id="new-qty" type="number" min="0" step="0.01" placeholder="Qty" />
+      <input id="new-unit" placeholder="Unit (g, ml, cup, piece)" />
+      <button id="add-row">Add</button>
+    </div>
   </div>
 </section>
 
 <section id="voice" class="card">
-  <h1><b>Voice Ingest</b></h1>
+  <div class="card-header">
+    <h2>Voice Ingest</h2>
+  </div>
   <div class="row">
     <button id="rec-toggle">Start Recording</button>
     <label>Language (optional)
@@ -67,26 +87,18 @@
   </div>
 </section>
 
-<section class="card" id="recipes-section">
-  <h2>Suggest Recipes</h2>
-  <form id="suggest-form">
-    <div class="row">
-      <label>Time (minutes) <input type="number" id="time" min="0" /></label>
-      <label>Servings <input type="number" id="servings" min="1" value="1" /></label>
-    </div>
-    <div class="row">
-      <label>Mood <input id="mood" placeholder="light, comforting, spicy" /></label>
-      <label>Diet (comma-separated) <input id="diet" placeholder="vegetarian, gluten-free" /></label>
-    </div>
-    <div class="row">
-      <label>Protein goal (g) <input type="number" id="protein" min="0" step="1" /></label>
-    </div>
-    <button type="submit">Suggest</button>
-  </form>
-  <div id="suggest-status" class="status" hidden></div>
-  <div id="recipes"></div>
+<section id="staging" class="card">
+  <div class="card-header">
+    <h2>Staging Area</h2>
+  </div>
+  <ul id="staged-list"></ul>
+  <div class="row">
+    <button id="merge-rows" class="primary" disabled>Save Items to Pantry</button>
+  </div>
 </section>
 
 <section id="toast" class="toast" hidden></section>
+
+</body>
 {% endblock %}
 
