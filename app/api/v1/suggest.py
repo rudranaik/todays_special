@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from app.config import Settings
 from app.core.models import Pantry, SuggestConstraints, SuggestResponse, InventoryEvent
-from app.services.llm import OpenAIRecipeSuggester
+from app.services.llm import OpenAIRecipeSuggester, SimpleRecipeSuggester
 from app.services.repo.json_repo import JSONPantryRepo, JSONEventRepo
 from app.services.exceptions import LLMError, RepoError
 
@@ -18,7 +18,14 @@ def get_repos(settings: Settings = Depends(get_settings)):
     return JSONPantryRepo(settings), JSONEventRepo(settings)
 
 def get_suggester(settings: Settings = Depends(get_settings)):
-    return OpenAIRecipeSuggester(settings)
+    # Toggle offline fallback with ITEMSNAp_USE_OPENAI=false in .env
+    try:
+        use_openai = settings.itemsnap_use_openai
+    except Exception:
+        use_openai = True
+    if use_openai:
+        return OpenAIRecipeSuggester(settings)
+    return SimpleRecipeSuggester()
 
 # ---- Route ------------------------------------------------------------------
 
@@ -38,8 +45,13 @@ def suggest_recipes(
     try:
         recipes = suggester.suggest(pantry, constraints)
     except LLMError as e:
-        # Upstream LLM failure; surface details; no fallback
-        raise HTTPException(status_code=502, detail=str(e))
+        # Fallback to simple local suggester to avoid breaking the UI
+        try:
+            fallback = SimpleRecipeSuggester()
+            recipes = fallback.suggest(pantry, constraints)
+        except Exception:
+            # Upstream LLM failure; surface details if fallback also fails
+            raise HTTPException(status_code=502, detail=str(e))
 
     # Log the event (best-effort; if it fails, still return suggestions)
     try:

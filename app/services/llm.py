@@ -159,3 +159,68 @@ class OpenAIRecipeSuggester(RecipeSuggester):
             return out
         except Exception as e:
             raise LLMError(f"OpenAI suggest failed: {e}") from e
+
+
+class SimpleRecipeSuggester(RecipeSuggester):
+    """Offline fallback suggester that crafts lightweight ideas from the pantry.
+
+    Returns deterministic, simple recipes so the UI keeps working when OpenAI is unavailable.
+    """
+
+    def suggest(self, pantry: Pantry, constraints: SuggestConstraints) -> List[Recipe]:
+        items = pantry.items[:]
+        # Build a couple of naive recipes based on available categories
+        by_name = [it.name for it in items]
+        tagbase: List[str] = []
+        if constraints.mood:
+            tagbase.append(constraints.mood)
+        if constraints.diet_conditions:
+            tagbase.extend(constraints.diet_conditions)
+
+        def make_recipe(idx: int, title: str, ing_names: List[str]) -> Recipe:
+            ings = []
+            for n in ing_names:
+                # Find first match ignoring case
+                it = next((i for i in items if i.name.lower() == n.lower()), None)
+                if it is None:
+                    it = Item(name=n, quantity=0, unit=None)
+                ings.append(it)
+            steps = [
+                "Prep ingredients (wash, chop as needed).",
+                "Heat pan or pot; add base fat if using.",
+                "Cook ingredients until done to your liking.",
+                "Season to taste and serve warm.",
+            ]
+            return Recipe(
+                id=f"local-{idx}",
+                title=title,
+                steps=steps,
+                ingredients=ings,
+                est_protein_g=None,
+                est_kcal=None,
+                est_time_minutes=constraints.time_minutes or 15,
+                tags=tagbase[:],
+            )
+
+        # Simple heuristics
+        has_eggs = any("egg" in n.lower() for n in by_name)
+        has_pasta = any("pasta" in n.lower() or "noodle" in n.lower() for n in by_name)
+        has_rice = any("rice" in n.lower() for n in by_name)
+        has_tomato = any("tomato" in n.lower() for n in by_name)
+        has_onion = any("onion" in n.lower() for n in by_name)
+        has_oil = any("oil" in n.lower() or "ghee" in n.lower() or "butter" in n.lower() for n in by_name)
+
+        recipes: List[Recipe] = []
+        if has_eggs and has_onion:
+            recipes.append(make_recipe(1, "Quick Egg Scramble", ["eggs", "onion", "salt"]))
+        if has_pasta and has_tomato:
+            recipes.append(make_recipe(2, "Simple Tomato Pasta", ["pasta", "tomatoes", "olive oil"]))
+        if has_rice and has_onion:
+            recipes.append(make_recipe(3, "One-Pan Fried Rice", ["rice", "onion", "oil"]))
+
+        if not recipes:
+            # Fallback generic salad/sauté
+            base = by_name[:3] if by_name else ["salt", "pepper"]
+            recipes.append(make_recipe(4, "Pantry Toss", base))
+
+        return recipes
