@@ -10,7 +10,11 @@
   <header class="nav">
     <div class="brand">Today's Special</div>
     <nav>
-      {% block nav %}{% endblock %}
+      {% block nav %}
+        <a href="/">Home</a>
+        <a href="/favorites">Favorites</a>
+        <a href="/profile">Profile</a>
+      {% endblock %}
     </nav>
   </header>
   <main class="container">

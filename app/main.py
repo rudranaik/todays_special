@@ -22,6 +22,7 @@ from fastapi import Request
 from app.api.v1.ingest import router as ingest_router
 from app.api.v1.metrics import router as metrics_router
 from app.api.v1.favorites import router as favorites_router
+from app.api.v1.profile import router as profile_router
 
 
 # print("OPENAI_API_KEY from env:", os.getenv("OPENAI_API_KEY"))
@@ -51,6 +52,7 @@ def create_app() -> FastAPI:
     app.include_router(ingest_router)
     app.include_router(metrics_router)
     app.include_router(favorites_router)
+    app.include_router(profile_router)
 
     @app.get("/")
     def home(request: Request):
@@ -59,6 +61,10 @@ def create_app() -> FastAPI:
     @app.get("/favorites")
     def favorites_page(request: Request):
         return templates.TemplateResponse("favorites.html", {"request": request, "title": "Favorites"})
+
+    @app.get("/profile")
+    def profile_page(request: Request):
+        return templates.TemplateResponse("profile.html", {"request": request, "title": "Profile"})
 
     @app.get("/healthz")
     def healthz():

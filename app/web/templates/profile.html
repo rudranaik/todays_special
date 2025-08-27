@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block nav %}
+  <a href="/">Home</a>
+  <a href="/favorites">Favorites</a>
+  <a href="/profile">Profile</a>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <section class="card">
+        <div class="card-header">
+            <h2>User Profile</h2>
+        </div>
+        <form id="profile-form">
+            <div class="form-grid">
+                <label>Name <input id="user_name" required /></label>
+                <label>Age <input id="age" type="number" min="0" required /></label>
+                <label>Gender
+                    <select id="gender" required>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                </label>
+                <label>Country <input id="country" required /></label>
+                <label>Height (cm) <input id="height" type="number" min="0" step="0.1" required /></label>
+                <label>Weight (kg) <input id="weight" type="number" min="0" step="0.1" required /></label>
+            </div>
+            <button type="submit" class="primary">Save Profile</button>
+        </form>
+    </section>
+
+    <section class="card">
+        <div class="card-header">
+            <h2>Macro Goals</h2>
+        </div>
+        <div id="macro-goals" class="form-grid"></div>
+    </section>
+
+    <section class="card">
+        <div class="card-header">
+            <h2>Meals</h2>
+            <button id="add-meal" class="primary">Add Meal</button>
+        </div>
+        <div id="meals"></div>
+    </section>
+</div>
+
+<script src="/static/profile.js"></script>
+{% endblock %}

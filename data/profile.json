@@ -1,0 +1,37 @@
+{
+  "user_name": "Rudra",
+  "age": 34,
+  "gender": "male",
+  "height": 183.0,
+  "weight": 81.0,
+  "country": "India",
+  "macro_goals": {
+    "calories": 2146.0,
+    "protein": 161.0,
+    "carbohydrates": 215.0,
+    "fats": 72.0
+  },
+  "meals": [
+    {
+      "name": "Breakfast",
+      "calories": 716.0,
+      "protein": 54.0,
+      "carbohydrates": 72.0,
+      "fats": 24.0
+    },
+    {
+      "name": "Lunch",
+      "calories": 716.0,
+      "protein": 54.0,
+      "carbohydrates": 72.0,
+      "fats": 24.0
+    },
+    {
+      "name": "Dinner",
+      "calories": 716.0,
+      "protein": 54.0,
+      "carbohydrates": 72.0,
+      "fats": 24.0
+    }
+  ]
+}

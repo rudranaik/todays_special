@@ -420,3 +420,29 @@ td:last-child {
 .pantry-group-body {
   padding: 8px;
 }
+
+.profile-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.meal-item {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.meal-item h3 {
+    margin: 0 0 16px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--accent);
+}
+

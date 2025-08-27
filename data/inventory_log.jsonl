@@ -86,3 +86,9 @@
 {"ts":"2025-08-27 16:21:25.925937","type":"suggest","payload":{"constraints":{"time_minutes":30,"mood":"light","diet_conditions":["veg"],"protein_goal_g":20.0,"servings":1},"recipe_count":3},"schema_version":1}
 {"ts":"2025-08-27 16:22:57.453065","type":"ingest","payload":{"count":2,"source":"text"},"schema_version":1}
 {"ts":"2025-08-27 16:23:05.806852","type":"update","payload":{"mode":"merge","delta":[{"name":"Potatoes","quantity":1.0,"unit":"kg","category":"Vegetables - Root & tubers","confidence":null,"notes":null},{"name":"Yams","quantity":1.0,"unit":"kg","category":"Vegetables - Root & tubers","confidence":null,"notes":null}]},"schema_version":1}
+{"ts":"2025-08-27 16:48:44.104199","type":"ingest","payload":{"count":2,"source":"text"},"schema_version":1}
+{"ts":"2025-08-27 16:48:46.437771","type":"update","payload":{"mode":"merge","delta":[{"name":"Banana","quantity":1.0,"unit":null,"category":"Fruits","confidence":null,"notes":null},{"name":"Orange","quantity":1.0,"unit":null,"category":"Fruits","confidence":null,"notes":null}]},"schema_version":1}
+{"ts":"2025-08-27 16:59:51.476824","type":"ingest","payload":{"count":0,"source":"text"},"schema_version":1}
+{"ts":"2025-08-27 17:00:36.945548","type":"suggest","payload":{"constraints":{"time_minutes":null,"mood":null,"diet_conditions":[],"protein_goal_g":null,"servings":1},"recipe_count":3},"schema_version":1}
+{"ts":"2025-08-27 17:11:24.091752","type":"ingest","payload":{"count":1,"source":"text"},"schema_version":1}
+{"ts":"2025-08-27 17:11:25.531251","type":"update","payload":{"mode":"merge","delta":[{"name":"Potato","quantity":1.0,"unit":null,"category":"Vegetables - Root & tubers","confidence":null,"notes":null}]},"schema_version":1}
