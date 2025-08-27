@@ -84,6 +84,9 @@ class SuggestConstraints(BaseModel):
     mood: Optional[str] = None                 # e.g., "comforting", "light", "spicy"
     diet_conditions: List[str] = Field(default_factory=list)  # e.g., ["vegetarian", "gluten-free"]
     protein_goal_g: Optional[float] = Field(None, ge=0)
+    calorie_goal: Optional[float] = Field(None, ge=0)
+    fat_goal_g: Optional[float] = Field(None, ge=0)
+    carbohydrate_goal_g: Optional[float] = Field(None, ge=0)
     servings: int = Field(1, ge=1)
 
 

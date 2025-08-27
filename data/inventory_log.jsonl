@@ -92,3 +92,6 @@
 {"ts":"2025-08-27 17:00:36.945548","type":"suggest","payload":{"constraints":{"time_minutes":null,"mood":null,"diet_conditions":[],"protein_goal_g":null,"servings":1},"recipe_count":3},"schema_version":1}
 {"ts":"2025-08-27 17:11:24.091752","type":"ingest","payload":{"count":1,"source":"text"},"schema_version":1}
 {"ts":"2025-08-27 17:11:25.531251","type":"update","payload":{"mode":"merge","delta":[{"name":"Potato","quantity":1.0,"unit":null,"category":"Vegetables - Root & tubers","confidence":null,"notes":null}]},"schema_version":1}
+{"ts":"2025-08-27 17:35:13.409910","type":"suggest","payload":{"constraints":{"time_minutes":null,"mood":null,"diet_conditions":[],"protein_goal_g":54.0,"calorie_goal":716.0,"fat_goal_g":24.0,"carbohydrate_goal_g":72.0,"servings":1},"recipe_count":3},"schema_version":1}
+{"ts":"2025-08-27 17:36:41.298956","type":"ingest","payload":{"count":1,"source":"text"},"schema_version":1}
+{"ts":"2025-08-27 17:36:44.189051","type":"update","payload":{"mode":"merge","delta":[{"name":"onion","quantity":1.0,"unit":null,"category":"Vegetables - Others","confidence":null,"notes":null}]},"schema_version":1}

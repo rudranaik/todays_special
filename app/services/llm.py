@@ -110,25 +110,27 @@ class OpenAIRecipeSuggester(RecipeSuggester):
             raise LLMError("Could not initialize OpenAI client") from e
         self._model = settings.openai_model_suggest
 
-    def suggest(self, pantry: Pantry, constraints: SuggestConstraints) -> List[Recipe]:
+    def suggest(self, pantry: Pantry, constraints: SuggestConstraints, country: str = None) -> List[Recipe]:
         try:
             pantry_min = [
                 {"name": it.name, "quantity": it.quantity, "unit": it.unit}
                 for it in pantry.items
             ]
+            country_prompt = f"The user is from {country}, so the recipes should be localized to their region."
             prompt = (
                 "You are the world's best grandma, and cook the best food with whatever you have."
                 "Given this pantry and constraints your grandkids have, propose 3 recipes with instructions"
                 "listed very logvingly. Make sure to only use the available ingredients in the pantry,"
                 "and strictly adhere to the constrainst, else your grandkids will not be able to cook it."
+                f"{country_prompt if country else ''}"
                 "Also know that these kids are very new to cooking, so they won't know the right moment"
                 "to add ingredients. So you'll have to give them relatable milestones like smell, visibility, etc."
                 "so that they can know when to follow the next step." 
                 "Give you inputs as a strict JSON in the following format:\n"
-                "Schema: {\"recipes\":[{\"id\": str, \"title\": str, \"preparation\": [str], \"steps\": [str], "
-                "\"ingredients\":[{\"name\": str, \"quantity\": number?, \"unit\": str?}], "
-                "\"est_prep_time_minutes\": number?, \"est_protein_g\": number?, \"est_kcal\": number?, "
-                "\"est_time_minutes\": number?, \"tags\":[str]}]}"
+                r'Schema: {"recipes":[{"id": str, "title": str, "preparation": [str], "steps": [str], '
+                r'"ingredients":[{"name": str, "quantity": "number?", "unit": "str?"}], '
+                r'"est_prep_time_minutes": "number?", "est_protein_g": "number?", "est_kcal": "number?", '
+                r'"est_time_minutes": "number?", "tags":[str]}]}'
                 "\n\n"
                 f"Pantry: {json.dumps(pantry_min)}\n"
                 f"Constraints: {constraints.json()}\n"
@@ -168,7 +170,7 @@ class SimpleRecipeSuggester(RecipeSuggester):
     Returns deterministic, simple recipes so the UI keeps working when OpenAI is unavailable.
     """
 
-    def suggest(self, pantry: Pantry, constraints: SuggestConstraints) -> List[Recipe]:
+    def suggest(self, pantry: Pantry, constraints: SuggestConstraints, country: str = None) -> List[Recipe]:
         items = pantry.items[:]
         # Build a couple of naive recipes based on available categories
         by_name = [it.name for it in items]

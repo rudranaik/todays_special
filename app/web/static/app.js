@@ -17,7 +17,43 @@ const els = {
   pantryToggle: document.getElementById("pantry-toggle"),
   pantryContent: document.getElementById("pantry-content"),
   suggestStatus: document.getElementById("suggest-status"),
+  mealChips: document.getElementById("meal-chips"),
 };
+
+let selectedMeal = null;
+
+async function loadProfile() {
+    try {
+        const r = await fetch(`${apiBase}/api/v1/profile`);
+        if (r.ok) {
+            const profile = await r.json();
+            renderMealChips(profile.meals);
+        }
+    } catch (e) {
+        console.error("Failed to load profile", e);
+    }
+}
+
+function renderMealChips(meals) {
+    if (!els.mealChips) return;
+    els.mealChips.innerHTML = "";
+    meals.forEach(meal => {
+        const chip = document.createElement("button");
+        chip.className = "chip";
+        chip.textContent = meal.name;
+        chip.addEventListener("click", () => {
+            if (chip.classList.contains("selected")) {
+                chip.classList.remove("selected");
+                selectedMeal = null;
+            } else {
+                document.querySelectorAll(".chip.selected").forEach(c => c.classList.remove("selected"));
+                chip.classList.add("selected");
+                selectedMeal = meal;
+            }
+        });
+        els.mealChips.appendChild(chip);
+    });
+}
 
 // ---- Identity & correlation helpers ----
 function getDeviceId() {
@@ -315,9 +351,16 @@ async function suggestRecipes(ev) {
     time_minutes: els.time?.value ? Number(els.time.value) : null,
     mood: document.getElementById("mood").value || null,
     diet_conditions: (document.getElementById("diet").value || "").split(",").map(s => s.trim()).filter(Boolean),
-    protein_goal_g: document.getElementById("protein").value ? Number(document.getElementById("protein").value) : null,
     servings: Number(document.getElementById("servings").value || 1),
   };
+
+  if (selectedMeal) {
+    constraints.protein_goal_g = selectedMeal.protein;
+    constraints.calorie_goal = selectedMeal.calories;
+    constraints.fat_goal_g = selectedMeal.fats;
+    constraints.carbohydrate_goal_g = selectedMeal.carbohydrates;
+  }
+
   const r = await fetch(`${apiBase}/api/suggest_recipes`, {
     method: "POST",
     headers: { "Content-Type":"application/json", "X-Device-Id": DEVICE_ID, "X-Correlation-Id": corr },
@@ -448,11 +491,13 @@ els.time = document.getElementById("time");
 if (els.pantryItems) {
   loadPantry();
   renderStaged();
+  loadProfile();
 }
 
 // ---------------- Voice Ingest ----------------
 let mediaRecorder = null;
 let recordedChunks = [];
+
 const vEls = {
   toggle: document.getElementById("rec-toggle"),
   audio: document.getElementById("rec-audio"),
