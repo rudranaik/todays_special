@@ -348,10 +348,11 @@ async function suggestRecipes(ev) {
 
 function recipeToPlainText(r) {
   const ing = (r.ingredients || []).map(i => `- ${i.name}${(i.quantity || 0) ? ` — ${i.quantity} ${i.unit || ""}` : ""}`).join("\n");
+  const prep = (r.preparation || []).map((s, i) => `${i + 1}. ${s}`).join("\n");
   const steps = (r.steps || []).map((s, i) => `${i + 1}. ${s}`).join("\n");
   const tags = (r.tags || []).join(", ");
-  const meta = `~${r.est_time_minutes ?? "?"} min • ${r.est_kcal ?? "?"} kcal • ${r.est_protein_g ?? "?"} g protein`;
-  return `${r.title}\n${tags ? `Tags: ${tags}\n` : ""}${meta}\n\nIngredients:\n${ing}\n\nSteps:\n${steps}`;
+  const meta = `~${r.est_prep_time_minutes ?? "?"} min prep • ~${r.est_time_minutes ?? "?"} min cook • ${r.est_kcal ?? "?"} kcal • ${r.est_protein_g ?? "?"} g protein`;
+  return `${r.title}\n${tags ? `Tags: ${tags}\n` : ""}${meta}\n\nIngredients:\n${ing}\n\nPreparation:\n${prep}\n\nSteps:\n${steps}`;
 }
 
 async function saveFavorite(recipe, btnEl) {
@@ -395,6 +396,7 @@ function renderRecipes(recipes) {
     const div = document.createElement("div");
     div.className = "recipe";
     const tags = (r.tags || []).join(" • ");
+    const prep = (r.preparation || []).map(s => `<li>${s}</li>`).join("");
     const steps = (r.steps || []).map(s => `<li>${s}</li>`).join("");
     const ing = (r.ingredients || []).map(i => `<li>${i.name} — ${i.quantity || 0} ${i.unit || ""}</li>`).join("");
     div.innerHTML = `
@@ -405,10 +407,14 @@ function renderRecipes(recipes) {
         <ul>${ing}</ul>
       </details>
       <details>
+        <summary>Preparation</summary>
+        <ol>${prep}</ol>
+      </details>
+      <details>
         <summary>Steps</summary>
         <ol>${steps}</ol>
       </details>
-      <div class="tags">~${r.est_time_minutes ?? "?"} min • ${r.est_kcal ?? "?"} kcal • ${r.est_protein_g ?? "?"} g protein</div>
+      <div class="tags">~${r.est_prep_time_minutes ?? "?"} min prep • ~${r.est_time_minutes ?? "?"} min cook • ${r.est_kcal ?? "?"} kcal • ${r.est_protein_g ?? "?"} g protein</div>
       <div class="row">
         <button class="copy-btn">Copy recipe</button>
         <button class="fav-btn primary">Save to Favorites</button>
@@ -652,6 +658,7 @@ function renderFavorites(recipes) {
     const div = document.createElement("div");
     div.className = "recipe";
     const tags = (r.tags || []).join(" • ");
+    const prep = (r.preparation || []).map(s => `<li>${s}</li>`).join("");
     const steps = (r.steps || []).map(s => `<li>${s}</li>`).join("");
     const ing = (r.ingredients || []).map(i => `<li>${i.name} — ${i.quantity || 0} ${i.unit || ""}</li>`).join("");
     div.innerHTML = `
@@ -662,10 +669,14 @@ function renderFavorites(recipes) {
         <ul>${ing}</ul>
       </details>
       <details>
+        <summary>Preparation</summary>
+        <ol>${prep}</ol>
+      </details>
+      <details>
         <summary>Steps</summary>
         <ol>${steps}</ol>
       </details>
-      <div class="tags">~${r.est_time_minutes ?? "?"} min • ${r.est_kcal ?? "?"} kcal • ${r.est_protein_g ?? "?"} g protein</div>
+      <div class="tags">~${r.est_prep_time_minutes ?? "?"} min prep • ~${r.est_time_minutes ?? "?"} min cook • ${r.est_kcal ?? "?"} kcal • ${r.est_protein_g ?? "?"} g protein</div>
       <div class="row">
         <button class="copy-btn">Copy recipe</button>
         <button class="remove-fav-btn">Remove</button>

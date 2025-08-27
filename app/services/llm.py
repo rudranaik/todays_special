@@ -70,7 +70,7 @@ class OpenAIItemExtractor(ItemExtractor):
                 "Extract grocery/pantry items from this transcript (may be multilingual). "
                 "If unsure about quantity, set it to 1. Do not invent items. "
                 "Return ONLY a strict JSON array where each item is: "
-                '{"name": str, "quantity"?: number, "unit"?: str, "category"?: str}. '
+                '{\"name\": str, \"quantity\?: number, \"unit\?: str, \"category\?: str}. ' 
                 "If you can classify the item, set 'category' to one of these exactly: "
                 f"{allowed}. Otherwise omit category.\n\n"
                 "Examples: spinach -> 'Vegetables - Leafy greens'; potatoes -> 'Vegetables - Root & tubers'; "
@@ -79,8 +79,7 @@ class OpenAIItemExtractor(ItemExtractor):
             )
             resp = self._client.chat.completions.create(
                 model=self._model,
-                messages=[{"role": "system", "content": "You extract shopping items as strict JSON."},
-                          {"role": "user", "content": prompt}],
+                messages=[{"role": "system", "content": "You extract shopping items as strict JSON."},{"role": "user", "content": prompt}],
                 # temperature=0,
             )
             content = resp.choices[0].message.content or "[]"
@@ -126,18 +125,18 @@ class OpenAIRecipeSuggester(RecipeSuggester):
                 "to add ingredients. So you'll have to give them relatable milestones like smell, visibility, etc."
                 "so that they can know when to follow the next step." 
                 "Give you inputs as a strict JSON in the following format:\n"
-                "Schema: {\"recipes\":[{\"id\": str, \"title\": str, \"steps\": [str], "
+                "Schema: {\"recipes\":[{\"id\": str, \"title\": str, \"preparation\": [str], \"steps\": [str], "
                 "\"ingredients\":[{\"name\": str, \"quantity\": number?, \"unit\": str?}], "
-                "\"est_protein_g\": number?, \"est_kcal\": number?, "
-                "\"est_time_minutes\": number?, \"tags\":[str]}]}\n\n"
+                "\"est_prep_time_minutes\": number?, \"est_protein_g\": number?, \"est_kcal\": number?, "
+                "\"est_time_minutes\": number?, \"tags\":[str]}]}"
+                "\n\n"
                 f"Pantry: {json.dumps(pantry_min)}\n"
                 f"Constraints: {constraints.json()}\n"
                 "Return ONLY the JSON object; no commentary."
             )
             resp = self._client.chat.completions.create(
                 model=self._model,
-                messages=[{"role": "system", "content": "You are a precise recipe generator returning strict JSON."},
-                          {"role": "user", "content": prompt}],
+                messages=[{"role": "system", "content": "You are a precise recipe generator returning strict JSON."},{"role": "user", "content": prompt}],
                 # temperature=0.2,
             )
             content = resp.choices[0].message.content or "{\"recipes\":[]}"
@@ -149,8 +148,10 @@ class OpenAIRecipeSuggester(RecipeSuggester):
                 out.append(Recipe(
                     id=r["id"],
                     title=r["title"],
+                    preparation=list(r.get("preparation", [])),
                     steps=list(r.get("steps", [])),
                     ingredients=items,
+                    est_prep_time_minutes=r.get("est_prep_time_minutes"),
                     est_protein_g=r.get("est_protein_g"),
                     est_kcal=r.get("est_kcal"),
                     est_time_minutes=r.get("est_time_minutes"),
@@ -194,8 +195,10 @@ class SimpleRecipeSuggester(RecipeSuggester):
             return Recipe(
                 id=f"local-{idx}",
                 title=title,
+                preparation=["Wash and chop all ingredients."],
                 steps=steps,
                 ingredients=ings,
+                est_prep_time_minutes=10,
                 est_protein_g=None,
                 est_kcal=None,
                 est_time_minutes=constraints.time_minutes or 15,

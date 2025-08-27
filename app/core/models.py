@@ -90,8 +90,10 @@ class SuggestConstraints(BaseModel):
 class Recipe(BaseModel):
     id: str
     title: str
+    preparation: List[str] = Field(default_factory=list)
     steps: List[str]
     ingredients: List[Item]
+    est_prep_time_minutes: Optional[int] = Field(None, ge=0)
     est_protein_g: Optional[float] = Field(None, ge=0)
     est_kcal: Optional[float] = Field(None, ge=0)
     est_time_minutes: Optional[int] = Field(None, ge=0)
