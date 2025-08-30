@@ -13,6 +13,9 @@ import os
 
 from app.api.v1.suggest import router as suggest_router
 from app.api.v1.pantry import router as pantry_router
+
+from app.telemetry import setup_telemetry
+
 load_dotenv()  # populates os.environ from .env
 
 from fastapi.staticfiles import StaticFiles
@@ -25,7 +28,8 @@ from app.api.v1.favorites import router as favorites_router
 from app.api.v1.profile import router as profile_router
 
 
-# print("OPENAI_API_KEY from env:", os.getenv("OPENAI_API_KEY"))
+# This will hold the Phoenix session object
+phoenix_session = None
 
 
 @asynccontextmanager
@@ -36,8 +40,10 @@ async def lifespan(app: FastAPI):
     yield
 
 def create_app() -> FastAPI:
+    global phoenix_session
     settings = Settings()
     app = FastAPI(title="Pantry Suggest API", version="1.0", lifespan=lifespan)
+    phoenix_session = setup_telemetry(app)
 
     # CORS (narrow it down in .env via CORS_ALLOW_ORIGINS if you want)
     app.add_middleware(
