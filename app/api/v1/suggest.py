@@ -5,6 +5,7 @@ from app.config import Settings
 from app.core.models import Pantry, SuggestConstraints, SuggestResponse, InventoryEvent
 from app.services.llm import OpenAIRecipeSuggester, SimpleRecipeSuggester
 from app.services.repo.json_repo import JSONPantryRepo, JSONEventRepo
+from app.services.repo.profile_repo import JSONUserProfileRepo
 from app.services.metrics import MetricsLogger
 import time
 from app.services.exceptions import LLMError, RepoError
@@ -17,7 +18,7 @@ def get_settings() -> Settings:
     return Settings()
 
 def get_repos(settings: Settings = Depends(get_settings)):
-    return JSONPantryRepo(settings), JSONEventRepo(settings)
+    return JSONPantryRepo(settings), JSONEventRepo(settings), JSONUserProfileRepo(settings)
 
 def get_suggester(settings: Settings = Depends(get_settings)):
     # Toggle offline fallback with ITEMSNAp_USE_OPENAI=false in .env
@@ -38,16 +39,17 @@ def suggest_recipes(
     repos = Depends(get_repos),
     request: Request = None,
 ):
-    pantry_repo, event_repo = repos
+    pantry_repo, event_repo, profile_repo = repos
     try:
         pantry: Pantry = pantry_repo.load()
+        profile: UserProfile = profile_repo.load()
     except RepoError as e:
         # Storage failure
         raise HTTPException(status_code=500, detail=str(e))
 
     try:
         t0 = time.perf_counter()
-        recipes = suggester.suggest(pantry, constraints)
+        recipes = suggester.suggest(pantry, constraints, profile.country if profile else None)
         dt_ms = (time.perf_counter() - t0) * 1000.0
         # best-effort latency log
         try:

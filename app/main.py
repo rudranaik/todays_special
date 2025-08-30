@@ -13,6 +13,9 @@ import os
 
 from app.api.v1.suggest import router as suggest_router
 from app.api.v1.pantry import router as pantry_router
+
+from app.telemetry import setup_telemetry
+
 load_dotenv()  # populates os.environ from .env
 
 from fastapi.staticfiles import StaticFiles
@@ -22,9 +25,11 @@ from fastapi import Request
 from app.api.v1.ingest import router as ingest_router
 from app.api.v1.metrics import router as metrics_router
 from app.api.v1.favorites import router as favorites_router
+from app.api.v1.profile import router as profile_router
 
 
-# print("OPENAI_API_KEY from env:", os.getenv("OPENAI_API_KEY"))
+# This will hold the Phoenix session object
+phoenix_session = None
 
 
 @asynccontextmanager
@@ -35,8 +40,10 @@ async def lifespan(app: FastAPI):
     yield
 
 def create_app() -> FastAPI:
+    global phoenix_session
     settings = Settings()
     app = FastAPI(title="Pantry Suggest API", version="1.0", lifespan=lifespan)
+    phoenix_session = setup_telemetry(app)
 
     # CORS (narrow it down in .env via CORS_ALLOW_ORIGINS if you want)
     app.add_middleware(
@@ -51,6 +58,7 @@ def create_app() -> FastAPI:
     app.include_router(ingest_router)
     app.include_router(metrics_router)
     app.include_router(favorites_router)
+    app.include_router(profile_router)
 
     @app.get("/")
     def home(request: Request):
@@ -59,6 +67,10 @@ def create_app() -> FastAPI:
     @app.get("/favorites")
     def favorites_page(request: Request):
         return templates.TemplateResponse("favorites.html", {"request": request, "title": "Favorites"})
+
+    @app.get("/profile")
+    def profile_page(request: Request):
+        return templates.TemplateResponse("profile.html", {"request": request, "title": "Profile"})
 
     @app.get("/healthz")
     def healthz():

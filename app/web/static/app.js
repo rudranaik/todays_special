@@ -17,7 +17,43 @@ const els = {
   pantryToggle: document.getElementById("pantry-toggle"),
   pantryContent: document.getElementById("pantry-content"),
   suggestStatus: document.getElementById("suggest-status"),
+  mealChips: document.getElementById("meal-chips"),
 };
+
+let selectedMeal = null;
+
+async function loadProfile() {
+    try {
+        const r = await fetch(`${apiBase}/api/v1/profile`);
+        if (r.ok) {
+            const profile = await r.json();
+            renderMealChips(profile.meals);
+        }
+    } catch (e) {
+        console.error("Failed to load profile", e);
+    }
+}
+
+function renderMealChips(meals) {
+    if (!els.mealChips) return;
+    els.mealChips.innerHTML = "";
+    meals.forEach(meal => {
+        const chip = document.createElement("button");
+        chip.className = "chip";
+        chip.textContent = meal.name;
+        chip.addEventListener("click", () => {
+            if (chip.classList.contains("selected")) {
+                chip.classList.remove("selected");
+                selectedMeal = null;
+            } else {
+                document.querySelectorAll(".chip.selected").forEach(c => c.classList.remove("selected"));
+                chip.classList.add("selected");
+                selectedMeal = meal;
+            }
+        });
+        els.mealChips.appendChild(chip);
+    });
+}
 
 // ---- Identity & correlation helpers ----
 function getDeviceId() {
@@ -315,9 +351,16 @@ async function suggestRecipes(ev) {
     time_minutes: els.time?.value ? Number(els.time.value) : null,
     mood: document.getElementById("mood").value || null,
     diet_conditions: (document.getElementById("diet").value || "").split(",").map(s => s.trim()).filter(Boolean),
-    protein_goal_g: document.getElementById("protein").value ? Number(document.getElementById("protein").value) : null,
     servings: Number(document.getElementById("servings").value || 1),
   };
+
+  if (selectedMeal) {
+    constraints.protein_goal_g = selectedMeal.protein;
+    constraints.calorie_goal = selectedMeal.calories;
+    constraints.fat_goal_g = selectedMeal.fats;
+    constraints.carbohydrate_goal_g = selectedMeal.carbohydrates;
+  }
+
   const r = await fetch(`${apiBase}/api/suggest_recipes`, {
     method: "POST",
     headers: { "Content-Type":"application/json", "X-Device-Id": DEVICE_ID, "X-Correlation-Id": corr },
@@ -348,10 +391,11 @@ async function suggestRecipes(ev) {
 
 function recipeToPlainText(r) {
   const ing = (r.ingredients || []).map(i => `- ${i.name}${(i.quantity || 0) ? ` — ${i.quantity} ${i.unit || ""}` : ""}`).join("\n");
+  const prep = (r.preparation || []).map((s, i) => `${i + 1}. ${s}`).join("\n");
   const steps = (r.steps || []).map((s, i) => `${i + 1}. ${s}`).join("\n");
   const tags = (r.tags || []).join(", ");
-  const meta = `~${r.est_time_minutes ?? "?"} min • ${r.est_kcal ?? "?"} kcal • ${r.est_protein_g ?? "?"} g protein`;
-  return `${r.title}\n${tags ? `Tags: ${tags}\n` : ""}${meta}\n\nIngredients:\n${ing}\n\nSteps:\n${steps}`;
+  const meta = `~${r.est_prep_time_minutes ?? "?"} min prep • ~${r.est_time_minutes ?? "?"} min cook • ${r.est_kcal ?? "?"} kcal • ${r.est_protein_g ?? "?"} g protein`;
+  return `${r.title}\n${tags ? `Tags: ${tags}\n` : ""}${meta}\n\nIngredients:\n${ing}\n\nPreparation:\n${prep}\n\nSteps:\n${steps}`;
 }
 
 async function saveFavorite(recipe, btnEl) {
@@ -395,6 +439,7 @@ function renderRecipes(recipes) {
     const div = document.createElement("div");
     div.className = "recipe";
     const tags = (r.tags || []).join(" • ");
+    const prep = (r.preparation || []).map(s => `<li>${s}</li>`).join("");
     const steps = (r.steps || []).map(s => `<li>${s}</li>`).join("");
     const ing = (r.ingredients || []).map(i => `<li>${i.name} — ${i.quantity || 0} ${i.unit || ""}</li>`).join("");
     div.innerHTML = `
@@ -405,10 +450,14 @@ function renderRecipes(recipes) {
         <ul>${ing}</ul>
       </details>
       <details>
+        <summary>Preparation</summary>
+        <ol>${prep}</ol>
+      </details>
+      <details>
         <summary>Steps</summary>
         <ol>${steps}</ol>
       </details>
-      <div class="tags">~${r.est_time_minutes ?? "?"} min • ${r.est_kcal ?? "?"} kcal • ${r.est_protein_g ?? "?"} g protein</div>
+      <div class="tags">~${r.est_prep_time_minutes ?? "?"} min prep • ~${r.est_time_minutes ?? "?"} min cook • ${r.est_kcal ?? "?"} kcal • ${r.est_protein_g ?? "?"} g protein</div>
       <div class="row">
         <button class="copy-btn">Copy recipe</button>
         <button class="fav-btn primary">Save to Favorites</button>
@@ -442,11 +491,13 @@ els.time = document.getElementById("time");
 if (els.pantryItems) {
   loadPantry();
   renderStaged();
+  loadProfile();
 }
 
 // ---------------- Voice Ingest ----------------
 let mediaRecorder = null;
 let recordedChunks = [];
+
 const vEls = {
   toggle: document.getElementById("rec-toggle"),
   audio: document.getElementById("rec-audio"),
@@ -652,6 +703,7 @@ function renderFavorites(recipes) {
     const div = document.createElement("div");
     div.className = "recipe";
     const tags = (r.tags || []).join(" • ");
+    const prep = (r.preparation || []).map(s => `<li>${s}</li>`).join("");
     const steps = (r.steps || []).map(s => `<li>${s}</li>`).join("");
     const ing = (r.ingredients || []).map(i => `<li>${i.name} — ${i.quantity || 0} ${i.unit || ""}</li>`).join("");
     div.innerHTML = `
@@ -662,10 +714,14 @@ function renderFavorites(recipes) {
         <ul>${ing}</ul>
       </details>
       <details>
+        <summary>Preparation</summary>
+        <ol>${prep}</ol>
+      </details>
+      <details>
         <summary>Steps</summary>
         <ol>${steps}</ol>
       </details>
-      <div class="tags">~${r.est_time_minutes ?? "?"} min • ${r.est_kcal ?? "?"} kcal • ${r.est_protein_g ?? "?"} g protein</div>
+      <div class="tags">~${r.est_prep_time_minutes ?? "?"} min prep • ~${r.est_time_minutes ?? "?"} min cook • ${r.est_kcal ?? "?"} kcal • ${r.est_protein_g ?? "?"} g protein</div>
       <div class="row">
         <button class="copy-btn">Copy recipe</button>
         <button class="remove-fav-btn">Remove</button>

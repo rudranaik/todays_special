@@ -84,14 +84,19 @@ class SuggestConstraints(BaseModel):
     mood: Optional[str] = None                 # e.g., "comforting", "light", "spicy"
     diet_conditions: List[str] = Field(default_factory=list)  # e.g., ["vegetarian", "gluten-free"]
     protein_goal_g: Optional[float] = Field(None, ge=0)
+    calorie_goal: Optional[float] = Field(None, ge=0)
+    fat_goal_g: Optional[float] = Field(None, ge=0)
+    carbohydrate_goal_g: Optional[float] = Field(None, ge=0)
     servings: int = Field(1, ge=1)
 
 
 class Recipe(BaseModel):
     id: str
     title: str
+    preparation: List[str] = Field(default_factory=list)
     steps: List[str]
     ingredients: List[Item]
+    est_prep_time_minutes: Optional[int] = Field(None, ge=0)
     est_protein_g: Optional[float] = Field(None, ge=0)
     est_kcal: Optional[float] = Field(None, ge=0)
     est_time_minutes: Optional[int] = Field(None, ge=0)
@@ -109,3 +114,32 @@ class InventoryEvent(BaseModel):
     type: Literal["ingest", "update", "suggest"]
     payload: dict
     schema_version: int = 1
+
+# ---------- User Profile ----------
+
+class MacroGoals(BaseModel):
+    calories: float = Field(2000, ge=0)
+    protein: float = Field(150, ge=0)
+    carbohydrates: float = Field(250, ge=0)
+    fats: float = Field(60, ge=0)
+
+class Meal(BaseModel):
+    name: str
+    calories: float = Field(ge=0)
+    protein: float = Field(ge=0)
+    carbohydrates: float = Field(ge=0)
+    fats: float = Field(ge=0)
+
+class UserProfile(BaseModel):
+    user_name: str
+    age: int = Field(ge=0)
+    gender: Literal["male", "female", "other"]
+    height: float = Field(ge=0)
+    weight: float = Field(ge=0)
+    country: str
+    macro_goals: MacroGoals = Field(default_factory=MacroGoals)
+    meals: List[Meal] = Field(default_factory=lambda: [
+        Meal(name="Breakfast", calories=600, protein=45, carbohydrates=75, fats=18),
+        Meal(name="Lunch", calories=800, protein=60, carbohydrates=100, fats=24),
+        Meal(name="Dinner", calories=600, protein=45, carbohydrates=75, fats=18),
+    ])

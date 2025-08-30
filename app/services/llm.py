@@ -70,7 +70,7 @@ class OpenAIItemExtractor(ItemExtractor):
                 "Extract grocery/pantry items from this transcript (may be multilingual). "
                 "If unsure about quantity, set it to 1. Do not invent items. "
                 "Return ONLY a strict JSON array where each item is: "
-                '{"name": str, "quantity"?: number, "unit"?: str, "category"?: str}. '
+                '{\"name\": str, \"quantity\?: number, \"unit\?: str, \"category\?: str}. ' 
                 "If you can classify the item, set 'category' to one of these exactly: "
                 f"{allowed}. Otherwise omit category.\n\n"
                 "Examples: spinach -> 'Vegetables - Leafy greens'; potatoes -> 'Vegetables - Root & tubers'; "
@@ -79,8 +79,7 @@ class OpenAIItemExtractor(ItemExtractor):
             )
             resp = self._client.chat.completions.create(
                 model=self._model,
-                messages=[{"role": "system", "content": "You extract shopping items as strict JSON."},
-                          {"role": "user", "content": prompt}],
+                messages=[{"role": "system", "content": "You extract shopping items as strict JSON."},{"role": "user", "content": prompt}],
                 # temperature=0,
             )
             content = resp.choices[0].message.content or "[]"
@@ -111,33 +110,35 @@ class OpenAIRecipeSuggester(RecipeSuggester):
             raise LLMError("Could not initialize OpenAI client") from e
         self._model = settings.openai_model_suggest
 
-    def suggest(self, pantry: Pantry, constraints: SuggestConstraints) -> List[Recipe]:
+    def suggest(self, pantry: Pantry, constraints: SuggestConstraints, country: str = None) -> List[Recipe]:
         try:
             pantry_min = [
                 {"name": it.name, "quantity": it.quantity, "unit": it.unit}
                 for it in pantry.items
             ]
+            country_prompt = f"The user is from {country}, so the recipes should be localized to their region."
             prompt = (
                 "You are the world's best grandma, and cook the best food with whatever you have."
                 "Given this pantry and constraints your grandkids have, propose 3 recipes with instructions"
                 "listed very logvingly. Make sure to only use the available ingredients in the pantry,"
                 "and strictly adhere to the constrainst, else your grandkids will not be able to cook it."
+                f"{country_prompt if country else ''}"
                 "Also know that these kids are very new to cooking, so they won't know the right moment"
                 "to add ingredients. So you'll have to give them relatable milestones like smell, visibility, etc."
                 "so that they can know when to follow the next step." 
                 "Give you inputs as a strict JSON in the following format:\n"
-                "Schema: {\"recipes\":[{\"id\": str, \"title\": str, \"steps\": [str], "
-                "\"ingredients\":[{\"name\": str, \"quantity\": number?, \"unit\": str?}], "
-                "\"est_protein_g\": number?, \"est_kcal\": number?, "
-                "\"est_time_minutes\": number?, \"tags\":[str]}]}\n\n"
+                r'Schema: {"recipes":[{"id": str, "title": str, "preparation": [str], "steps": [str], '
+                r'"ingredients":[{"name": str, "quantity": "number?", "unit": "str?"}], '
+                r'"est_prep_time_minutes": "number?", "est_protein_g": "number?", "est_kcal": "number?", '
+                r'"est_time_minutes": "number?", "tags":[str]}]}'
+                "\n\n"
                 f"Pantry: {json.dumps(pantry_min)}\n"
                 f"Constraints: {constraints.json()}\n"
                 "Return ONLY the JSON object; no commentary."
             )
             resp = self._client.chat.completions.create(
                 model=self._model,
-                messages=[{"role": "system", "content": "You are a precise recipe generator returning strict JSON."},
-                          {"role": "user", "content": prompt}],
+                messages=[{"role": "system", "content": "You are a precise recipe generator returning strict JSON."},{"role": "user", "content": prompt}],
                 # temperature=0.2,
             )
             content = resp.choices[0].message.content or "{\"recipes\":[]}"
@@ -149,8 +150,10 @@ class OpenAIRecipeSuggester(RecipeSuggester):
                 out.append(Recipe(
                     id=r["id"],
                     title=r["title"],
+                    preparation=list(r.get("preparation", [])),
                     steps=list(r.get("steps", [])),
                     ingredients=items,
+                    est_prep_time_minutes=r.get("est_prep_time_minutes"),
                     est_protein_g=r.get("est_protein_g"),
                     est_kcal=r.get("est_kcal"),
                     est_time_minutes=r.get("est_time_minutes"),
@@ -167,7 +170,7 @@ class SimpleRecipeSuggester(RecipeSuggester):
     Returns deterministic, simple recipes so the UI keeps working when OpenAI is unavailable.
     """
 
-    def suggest(self, pantry: Pantry, constraints: SuggestConstraints) -> List[Recipe]:
+    def suggest(self, pantry: Pantry, constraints: SuggestConstraints, country: str = None) -> List[Recipe]:
         items = pantry.items[:]
         # Build a couple of naive recipes based on available categories
         by_name = [it.name for it in items]
@@ -194,8 +197,10 @@ class SimpleRecipeSuggester(RecipeSuggester):
             return Recipe(
                 id=f"local-{idx}",
                 title=title,
+                preparation=["Wash and chop all ingredients."],
                 steps=steps,
                 ingredients=ings,
+                est_prep_time_minutes=10,
                 est_protein_g=None,
                 est_kcal=None,
                 est_time_minutes=constraints.time_minutes or 15,
